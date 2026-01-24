@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Form Status</title>
+
+  <style>
+    body {
+      font-family: system-ui, sans-serif;
+      max-width: 600px;
+      margin: 80px auto;
+      text-align: center;
+      padding: 0 20px;
+    }
+
+    h1 {
+      color: #2c3e50;
+      font-size: 28px;
+      margin-bottom: 20px;
+    }
+
+    p {
+      font-size: 18px;
+      line-height: 1.5;
+      margin-bottom: 40px;
+    }
+
+    .btn {
+      display: inline-block;
+      margin: 12px;
+      padding: 12px 24px;
+      font-size: 16px;
+      border-radius: 8px;
+      background-color: #007bff;
+      color: #fff;
+      text-decoration: none;
+      cursor: pointer;
+      user-select: none;
+      transition: background-color 0.2s ease;
+    }
+
+    .btn:hover {
+      background-color: #0056b3;
+    }
+
+    .btn.disabled {
+      background-color: #9ca3af;
+      cursor: not-allowed;
+    }
+
+    .btn.disabled:hover {
+      background-color: #9ca3af;
+    }
+
+    .hidden {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <!-- ===== Submitted State ===== -->
+  <section id="state-submitted">
+    <h1>Form Submitted!</h1>
+
+    <p>
+      Your form has been submitted and emailed to
+      <strong id="user-email">[email not provided]</strong>.<br>
+      While it's being reviewed, you may edit your form or submit a new one.
+    </p>
+
+    <a id="edit-form" class="btn">Edit your form</a>
+    <a id="new-form-submitted" class="btn">Submit a new form</a>
+  </section>
+
+  <!-- ===== Invalid Edit State ===== -->
+  <section id="state-invalid-edit" class="hidden">
+    <h1>This form cannot be edited</h1>
+
+    <p>
+      The edit link you used is invalid or has expired.
+      You can submit a new form below.
+    </p>
+
+    <a id="new-form-invalid" class="btn">Submit a new form</a>
+  </section>
+
+  <!-- ===== Unknown / Invalid State ===== -->
+  <section id="state-unknown" class="hidden">
+    <h1>This page cannot be opened</h1>
+
+    <p>
+      This page was opened with an invalid or unsupported link.
+    </p>
+  </section>
+
+  <script>
+    const FORM_URL =
+      "https://edreessaied.app.n8n.cloud/form/jira-ticket-drafter";
+    const WEBHOOK_URL =
+      "https://edreessaied.app.n8n.cloud/webhook/form"
+
+    const VALID_STATES = new Set([
+      "submitted",
+      "invalid_edit"
+    ]);
+
+    const params = new URLSearchParams(window.location.search);
+
+    // Normalize state (allow hyphen or underscore)
+    const state = params.get("state") || "unknown_state";
+
+    // Hide all sections first
+    document.querySelectorAll("section").forEach(el =>
+      el.classList.add("hidden")
+    );
+
+    function showState(id) {
+      const el = document.getElementById(id);
+      if (!el) {
+        throw new Error(`Missing state section: ${id}`);
+      }
+      el.classList.remove("hidden");
+    }
+
+    if (state === "submitted") {
+      // Submitted state
+      showState("state-submitted");
+      document.getElementById("new-form-submitted").href = FORM_URL;
+
+      const editToken = params.get("editToken");
+      const editLink = document.getElementById("edit-form");
+
+      if (!editToken) {
+        editLink.classList.add("disabled");
+        editLink.removeAttribute("href");
+        editLink.setAttribute("aria-disabled", "true");
+        editLink.setAttribute("tabindex", "-1");
+      } else {
+        editLink.href =
+          `${WEBHOOK_URL}?editToken=${encodeURIComponent(editToken)}`;
+      }
+    } else if (state === "invalid_edit") {
+      // invalid edit request
+      showState("state-invalid-edit");
+      document.getElementById("new-form-invalid").href = FORM_URL;
+    } else {
+      // Unknown state
+      showState("state-unknown");
+      document.getElementById("new-form-unknown").href = FORM_URL;
+    }
+  </script>
+
+</body>
+</html>
+
