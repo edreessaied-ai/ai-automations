@@ -108,7 +108,7 @@
 
     <form
       method="POST"
-      action="https://edreessaied.app.n8n.cloud/jira-ticket-drafter"
+      action="https://edreessaied.app.n8n.cloud/webhook/jira-ticket-drafter/"
     >
       <label for="ticketTitle">Ticket Title</label>
       <input
@@ -167,8 +167,8 @@
         placeholder="you@company.com"
       />
 
-      <label for="aiEnhance">Do you want AI to enhance this draft?</label>
-      <select id="aiEnhance" name="aiEnhance" required>
+      <label for="aiTicketDrafterEnabled">Do you want AI to enhance this draft?</label>
+      <select id="aiTicketDrafterEnabled" name="aiTicketDrafterEnabled" required>
         <option value="">Select…</option>
         <option>Yes</option>
         <option>No</option>
