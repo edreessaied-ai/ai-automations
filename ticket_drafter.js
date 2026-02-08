@@ -4,10 +4,12 @@
 */
 
 // URL to fetch existing draft data for editing
+const BASE_FORM_URL = "https://dev.aiautomations.engineering/";
 const FORM_SUBMISSION_URL = "https://edreessaied.app.n8n.cloud/webhook/form-submission";
 
 // Fetch params in the URL
 const params = new URLSearchParams(window.location.search);
+const state = params.get("state");
 // Parse the edit token if present
 const editToken = params.get("editToken");
 
@@ -45,17 +47,29 @@ async function loadDraft(token) {
         show("state-new");
     } catch (err) {
         console.error(err);
-        show("state-invalid-edit");
+        show("state-unknown");
     }
 }
 
-// Show the populated form if we have an edit token, otherwise show the blank form
-if (!editToken) {
+// If there's no state, show the new form. 
+// If it's "submitted", show the submitted state.
+// If it's "edit", load the draft for editing.
+// Otherwise, show an error.
+if (!state) {
     // New form
     show("state-new");
-} else {
-    // Load draft
+} else if (state == "submitted") {
+    // Show submitted state
+    show("state-submitted");
+} else if (state == "edit") {
+    const editLink = document.getElementById("edit-form");
+    editLink.href = `${BASE_FORM_URL}?state=edit&editToken=${encodeURIComponent(editToken)}`;
+
+    // Load edited draft
     loadDraft(editToken);
+} else {
+    // Invalid state
+    show("state-unknown");
 }
 
 // ===== Fullscreen textarea handler =====
@@ -64,15 +78,15 @@ let anchor = null;
 textarea.addEventListener("dblclick", () => {
     const isFullscreen = textarea.classList.contains("fullscreen-textarea");
     if (!isFullscreen) {
-    if (!anchor) {
-        const rect = textarea.getBoundingClientRect();
-        anchor = { width: textarea.style.width || rect.width + "px", height: textarea.style.height || rect.height + "px" };
-    }
-    textarea.classList.add("fullscreen-textarea");
+        if (!anchor) {
+            const rect = textarea.getBoundingClientRect();
+            anchor = { width: textarea.style.width || rect.width + "px", height: textarea.style.height || rect.height + "px" };
+        }
+        textarea.classList.add("fullscreen-textarea");
     } else {
-    textarea.classList.remove("fullscreen-textarea");
-    textarea.style.width = anchor.width;
-    textarea.style.height = anchor.height;
+        textarea.classList.remove("fullscreen-textarea");
+        textarea.style.width = anchor.width;
+        textarea.style.height = anchor.height;
     }
     textarea.focus();
 });
