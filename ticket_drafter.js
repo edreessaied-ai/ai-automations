@@ -14,7 +14,7 @@ const state = params.get("state");
 const editToken = params.get("editToken");
 
 // Hide all sections
-document.querySelectorAll("section").forEach(el => el.classList.add("hidden"));
+// document.querySelectorAll("section").forEach(el => el.classList.add("hidden"));
 
 function show(element_id) {
     // Show the specified section
@@ -24,10 +24,10 @@ function show(element_id) {
     }
 }
 
-async function loadDraft(token) {
+async function loadTicketDraftFormFromEditToken(editToken) {
     // Load the draft data from the server
     try {
-        const res = await fetch(`${FORM_SUBMISSION_URL}?editToken=${encodeURIComponent(token)}`);
+        const res = await fetch(`${FORM_SUBMISSION_URL}?editToken=${encodeURIComponent(editToken)}`);
         if (!res.ok) {
             throw new Error("Ticket draft not found");
         }
@@ -41,7 +41,7 @@ async function loadDraft(token) {
         document.getElementById("assigneeTeam").value = data.assigneeTeam || "";
         document.getElementById("assignee").value = data.assignee || "";
         document.getElementById("userEmail").value = data.userEmail || "";
-        document.getElementById("aiTicketDrafterEnabled").value = data.aiTicketDrafterEnabled || "";
+        document.getElementById("aiTicketDrafterEnabled").value = data.aiTicketDrafterEnabled ? "Yes" : "No";
 
         // Show form
         show("state-new");
@@ -61,18 +61,22 @@ if (!state) {
 } else if (state === "submitted") {
     // Show submitted state
     document.getElementById("new-form").href = BASE_FORM_URL;
-    const editLink = document.getElementById("edit-form");
-    if (editToken) {
-        editLink.href =
-            `${BASE_FORM_URL}?state=edit&editToken=${encodeURIComponent(editToken)}`;
-    } else {
-        editLink.classList.add("disabled");
-        editLink.removeAttribute("href");
+    const editButtonElement = document.getElementById("edit-form");
+    // if there's an edit button, set the href to include the edit token,
+    // otherwise disable the edit link
+    if (editButtonElement) {
+        if (editToken) {
+            editButtonElement.href =
+                `${BASE_FORM_URL}?state=edit&editToken=${encodeURIComponent(editToken)}`;
+        } else {
+            editButtonElement.classList.add("disabled");
+            editButtonElement.removeAttribute("href");
+        }
     }
     show("state-submitted");
 } else if (state === "edit") {
     // Load edited draft
-    loadDraft(editToken);
+    loadTicketDraftFormFromEditToken(editToken);
 } else {
     // Invalid state
     show("state-unknown");
