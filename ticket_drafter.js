@@ -58,13 +58,19 @@ async function loadDraft(token) {
 if (!state) {
     // New form
     show("state-new");
-} else if (state == "submitted") {
+} else if (state === "submitted") {
     // Show submitted state
-    show("state-submitted");
-} else if (state == "edit") {
+    document.getElementById("new-form").href = BASE_FORM_URL;
     const editLink = document.getElementById("edit-form");
-    editLink.href = `${BASE_FORM_URL}?state=edit&editToken=${encodeURIComponent(editToken)}`;
-
+    if (editToken) {
+        editLink.href =
+            `${BASE_FORM_URL}?state=edit&editToken=${encodeURIComponent(editToken)}`;
+    } else {
+        editLink.classList.add("disabled");
+        editLink.removeAttribute("href");
+    }
+    show("state-submitted");
+} else if (state === "edit") {
     // Load edited draft
     loadDraft(editToken);
 } else {
