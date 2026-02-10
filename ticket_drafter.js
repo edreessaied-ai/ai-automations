@@ -14,7 +14,7 @@ const state = params.get("state");
 const editToken = params.get("editToken");
 
 // Hide all sections
-// document.querySelectorAll("section").forEach(el => el.classList.add("hidden"));
+document.querySelectorAll("section").forEach(el => el.classList.add("hidden"));
 
 function show(element_id) {
     // Show the specified section
