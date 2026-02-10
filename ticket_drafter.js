@@ -13,13 +13,18 @@ const state = params.get("state");
 // Parse the edit token if present
 const editToken = params.get("editToken");
 
-// Hide all sections
-document.querySelectorAll("section").forEach(el => el.classList.add("hidden"));
 
-function show(element_id) {
+function hideAllStates() {
+    // Power to hide all sections
+    document.querySelectorAll("section")
+        .forEach(el => el.classList.add("hidden"));
+}
+
+function showPageState(element_id) {
     // Show the specified section
     const element = document.getElementById(element_id);
     if (element) {
+        hideAllStates();
         element.classList.remove("hidden");
     }
 }
@@ -32,7 +37,7 @@ async function loadTicketDraftFormFromEditToken(editToken) {
             throw new Error("Ticket draft not found");
         }
         const data = await res.json();
-
+        
         // Populate fields
         document.getElementById("ticketTitle").value = data.ticketTitle || "";
         document.getElementById("ticketDescription").value = data.ticketDescription || "";
@@ -42,14 +47,17 @@ async function loadTicketDraftFormFromEditToken(editToken) {
         document.getElementById("assignee").value = data.assignee || "";
         document.getElementById("userEmail").value = data.userEmail || "";
         document.getElementById("aiTicketDrafterEnabled").value = data.aiTicketDrafterEnabled ? "Yes" : "No";
-
+        
         // Show form
-        show("state-new");
+        showPageState("state-new");
     } catch (err) {
         console.error(err);
-        show("state-unknown");
+        showPageState("state-unknown");
     }
 }
+
+// First, hide all sections. We'll show the relevant one based on the state.
+hideAllStates();
 
 // If there's no state, show the new form. 
 // If it's "submitted", show the submitted state.
@@ -57,7 +65,7 @@ async function loadTicketDraftFormFromEditToken(editToken) {
 // Otherwise, show an error.
 if (!state) {
     // New form
-    show("state-new");
+    showPageState("state-new");
 } else if (state === "submitted") {
     // Show submitted state
     document.getElementById("new-form").href = BASE_FORM_URL;
@@ -73,13 +81,13 @@ if (!state) {
             editButtonElement.removeAttribute("href");
         }
     }
-    show("state-submitted");
+    showPageState("state-submitted");
 } else if (state === "edit") {
     // Load edited draft
     loadTicketDraftFormFromEditToken(editToken);
 } else {
     // Invalid state
-    show("state-unknown");
+    showPageState("state-unknown");
 }
 
 // ===== Fullscreen textarea handler =====
