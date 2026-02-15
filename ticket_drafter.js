@@ -63,7 +63,7 @@ hideAllStates();
 // If it's "submitted", show the submitted state.
 // If it's "edit", load the draft for editing.
 // Otherwise, show an error.
-if (!state) {
+if (!state || state === "form") {
     // New form
     showPageState("state-new");
 } else if (state === "submitted") {
