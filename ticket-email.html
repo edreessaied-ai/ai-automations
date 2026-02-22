@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html>
+<body style="margin:0;padding:0;background-color:#f6f1e7;font-family:Arial,Helvetica,sans-serif;">
+
+  <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#f6f1e7;padding:40px 20px;">
+    <tr>
+      <td align="center">
+
+        <!-- Card Container -->
+        <table width="600" cellpadding="0" cellspacing="0" border="0" style="background-color:#fffaf2;border-radius:16px;">
+          
+          <!-- Header -->
+          <tr>
+            <td style="padding:40px 40px 20px 40px;text-align:center;">
+              <h1 style="margin:0;font-size:28px;color:#3a2f1c;font-weight:700;">
+                Jira Ticket Draft
+              </h1>
+              <p style="margin:12px 0 0 0;font-size:16px;color:#5a4a32;">
+                Your AI-enhanced draft is ready for review.
+              </p>
+            </td>
+          </tr>
+
+          <!-- Divider -->
+          <tr>
+            <td style="padding:0 40px;">
+              <hr style="border:none;border-top:1px solid #e3d9c6;margin:20px 0;">
+            </td>
+          </tr>
+
+          <!-- Content -->
+          <tr>
+            <td style="padding:0 40px 10px 40px;">
+
+              <!-- Title -->
+              <p style="margin:0 0 6px 0;font-size:14px;font-weight:bold;color:#4a3c28;">
+                Ticket Title
+              </p>
+              <p style="margin:0 0 22px 0;font-size:16px;color:#2f2418;">
+                {{ $json.ticketTitle }}
+              </p>
+
+              <!-- Type -->
+              <p style="margin:0 0 6px 0;font-size:14px;font-weight:bold;color:#4a3c28;">
+                Ticket Type
+              </p>
+              <p style="margin:0 0 22px 0;font-size:16px;color:#2f2418;">
+                {{ $json.ticketType }}
+              </p>
+
+              <!-- Description -->
+              <p style="margin:0 0 6px 0;font-size:14px;font-weight:bold;color:#4a3c28;">
+                Ticket Description
+              </p>
+              <p style="margin:0 0 22px 0;font-size:16px;color:#2f2418;line-height:1.6;">
+                {{ $json.ticketDescription }}
+              </p>
+
+              <!-- Impact -->
+              <p style="margin:0 0 6px 0;font-size:14px;font-weight:bold;color:#4a3c28;">
+                Impact
+              </p>
+              <p style="margin:0 0 22px 0;font-size:16px;color:#2f2418;">
+                {{ $json.ticketImpact }}
+              </p>
+
+              <!-- Assignee -->
+              <p style="margin:0 0 6px 0;font-size:14px;font-weight:bold;color:#4a3c28;">
+                Assignee
+              </p>
+              <p style="margin:0 0 22px 0;font-size:16px;color:#2f2418;">
+                {{ $json.assignee }}
+              </p>
+
+              <!-- Assignee Team -->
+              <p style="margin:0 0 6px 0;font-size:14px;font-weight:bold;color:#4a3c28;">
+                Assignee Team
+              </p>
+              <p style="margin:0 0 30px 0;font-size:16px;color:#2f2418;">
+                {{ $json.assigneeTeam }}
+              </p>
+
+            </td>
+          </tr>
+
+          <!-- Buttons -->
+          <tr>
+            <td align="center" style="padding:10px 40px 40px 40px;">
+
+              <table cellpadding="0" cellspacing="0" border="0">
+                <tr>
+
+                  <!-- Edit Button -->
+                  <td style="padding:0 8px 10px 8px;">
+                    <a href="https://dev.aiautomations.engineering/?state=edit&editToken={{ $json.editToken }}"
+                       style="background-color:#0a2540;
+                              color:#ffffff;
+                              text-decoration:none;
+                              padding:14px 28px;
+                              border-radius:12px;
+                              display:inline-block;
+                              font-size:15px;
+                              font-weight:600;">
+                       Edit Draft
+                    </a>
+                  </td>
+
+                  <!-- New Form Button -->
+                  <td style="padding:0 8px 10px 8px;">
+                    <a href="https://dev.aiautomations.engineering/?state=form"
+                       style="background-color:#1f7a63;
+                              color:#ffffff;
+                              text-decoration:none;
+                              padding:14px 28px;
+                              border-radius:12px;
+                              display:inline-block;
+                              font-size:15px;
+                              font-weight:600;">
+                       Submit Another Form
+                    </a>
+                  </td>
+
+                </tr>
+              </table>
+
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="padding:20px 40px 40px 40px;text-align:center;font-size:12px;color:#8a7a60;">
+              Generated by Jira Ticket Drafter
+            </td>
+          </tr>
+
+        </table>
+
+      </td>
+    </tr>
+  </table>
+
+</body>
+</html>
