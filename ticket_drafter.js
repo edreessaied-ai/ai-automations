@@ -37,8 +37,8 @@ async function loadTicketDraftFormFromEditToken(editToken) {
             throw new Error("Ticket draft not found");
         }
         const data = await res.json();
-        throw new Error("Invalid edit token: " + data);
-        
+        throw new Error("Invalid data input: " + JSON.stringify(data, null, 2));
+
         // Populate fields
         document.getElementById("ticketTitle").value = data.ticketTitle || "";
         document.getElementById("ticketDescription").value = data.ticketDescription || "";
