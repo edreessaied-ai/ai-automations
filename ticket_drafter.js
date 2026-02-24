@@ -29,31 +29,46 @@ function showPageState(element_id) {
     }
 }
 
-async function loadTicketDraftFormFromEditToken(editToken) {
-    // Load the draft data from the server
-    try {
-        const res = await fetch(`${FORM_SUBMISSION_URL}?editToken=${encodeURIComponent(editToken)}`);
-        if (!res.ok) {
-            throw new Error("Ticket draft not found");
-        }
-        const data = await res.json();
-        throw new Error("Invalid data input: " + JSON.stringify(data, null, 2));
+async function loadTicketDraftFormFromEditToken(editToken, options = {}) {
+    const {
+        retries = 30,
+        retryDelayMs = 1000,
+    } = options;
 
-        // Populate fields
-        document.getElementById("ticketTitle").value = data.ticketTitle || "";
-        document.getElementById("ticketDescription").value = data.ticketDescription || "";
-        document.getElementById("ticketType").value = data.ticketType || "";
-        document.getElementById("ticketImpact").value = data.ticketImpact || "";
-        document.getElementById("assigneeTeam").value = data.assigneeTeam || "";
-        document.getElementById("assignee").value = data.assignee || "";
-        document.getElementById("userEmail").value = data.userEmail || "";
-        document.getElementById("aiTicketDrafterEnabled").value = data.aiTicketDrafterEnabled ? "Yes" : "No";
-        
-        // Show form
-        showPageState("state-new");
-    } catch (err) {
-        console.error(err);
-        showPageState("state-unknown");
+    const url = `${FORM_SUBMISSION_URL}?editToken=${encodeURIComponent(editToken)}`;
+
+    for (let attempt = 1; attempt <= retries; attempt++) {
+        try {
+            const res = await fetch(url);
+
+            if (!res.ok) {
+                throw new Error(`Request failed: ${res.status}`);
+            }
+
+            const data = await res.json();
+
+            // Populate fields
+            document.getElementById("ticketTitle").value = data.ticketTitle || "";
+            document.getElementById("ticketDescription").value = data.ticketDescription || "";
+            document.getElementById("ticketType").value = data.ticketType || "";
+            document.getElementById("ticketImpact").value = data.ticketImpact || "";
+            document.getElementById("assigneeTeam").value = data.assigneeTeam || "";
+            document.getElementById("assignee").value = data.assignee || "";
+            document.getElementById("userEmail").value = data.userEmail || "";
+            document.getElementById("aiTicketDrafterEnabled").value =
+                data.aiTicketDrafterEnabled ? "Yes" : "No";
+
+            showPageState("state-new");
+        } catch (err) {
+            if (attempt === retries) {
+                console.error("All attempts failed:", err);
+                showPageState("state-unknown");
+                return;
+            }
+
+            console.warn(`Attempt ${attempt} failed. Retrying...`);
+            await new Promise(resolve => setTimeout(resolve, retryDelayMs));
+        }
     }
 }
 
