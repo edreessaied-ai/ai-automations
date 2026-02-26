@@ -28,7 +28,7 @@ const schema = {
     assigneeTeam: { type: "string", enum: ["Captains of the World"] },
     assignee: { type: "string", enum: ["Edrees Saied"] },
     userEmail: { type: "string", format: "email", minLength: 1 },
-    aiTicketDrafterEnabled: { type: "string", enum: ["Yes", "No"] } // string enum for validation
+    aiTicketDrafterEnabled: { type: "string", enum: ["Yes", "No"] }
   }
 };
 
@@ -52,7 +52,7 @@ form.addEventListener("submit", async (e) => {
 
   // Validate raw payload
   if (!validate(filteredPayload)) {
-    console.error("Form submission invalid:", validate.errors);
+    console.error("Form payload does not comply with schema:", validate.errors);
     return;
   }
 
