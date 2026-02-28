@@ -59,6 +59,7 @@ async function loadTicketDraftFormFromEditToken(editToken, options = {}) {
                 data.aiTicketDrafterEnabled ? "Yes" : "No";
 
             showPageState("state-new");
+            break; // Exit loop on success
         } catch (err) {
             if (attempt === retries) {
                 console.error("All attempts failed:", err);
