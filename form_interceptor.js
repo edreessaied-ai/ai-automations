@@ -2,11 +2,14 @@
  * Intercept form submission, validate with AJV, and send JSON payload.
  */
 
-import Ajv from 'https://cdn.jsdelivr.net/npm/ajv@8/dist/ajv.esm.js';
+import Ajv2020 from 'https://esm.sh/ajv/dist/2020.js';
+import addFormats from 'https://esm.sh/ajv-formats';
+
+const ajv = new Ajv2020({ allErrors: true });
+addFormats(ajv);
 
 // JSON schema for form validation
 const schema = {
-  $schema: "https://json-schema.org/draft/2020-12/schema",
   title: "Ticket Submission Form",
   type: "object",
   additionalProperties: false,
@@ -32,7 +35,6 @@ const schema = {
   }
 };
 
-const ajv = new Ajv({ allErrors: true });
 const validate = ajv.compile(schema);
 
 const form = document.querySelector("form");
