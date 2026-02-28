@@ -2,6 +2,8 @@
  * Intercept form submission, validate with AJV, and send JSON payload.
  */
 
+import Ajv from "https://cdn.jsdelivr.net/npm/ajv@8/dist/ajv.min.js";
+
 // JSON schema for form validation
 const schema = {
   $schema: "https://json-schema.org/draft/2020-12/schema",
