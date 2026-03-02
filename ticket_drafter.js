@@ -55,8 +55,7 @@ async function loadTicketDraftFormFromEditToken(editToken, options = {}) {
             document.getElementById("assigneeTeam").value = data.assigneeTeam || "";
             document.getElementById("assignee").value = data.assignee || "";
             document.getElementById("userEmail").value = data.userEmail || "";
-            document.getElementById("aiTicketDrafterEnabled").value =
-                data.aiTicketDrafterEnabled ? "Yes" : "No";
+            document.getElementById("aiTicketDrafterEnabled").value = data.aiTicketDrafterEnabled || "";
 
             showPageState("state-new");
             break; // Exit loop on success
@@ -100,8 +99,18 @@ if (!state || state === "form") {
     }
     showPageState("state-submitted");
 } else if (state === "edit") {
-    // Load edited draft
-    loadTicketDraftFormFromEditToken(editToken);
+    // Show a temporary loading message
+    showPageState("state-new"); // show the form immediately
+    const loadingDiv = document.createElement("div");
+    loadingDiv.textContent = "Loading your draft...";
+    loadingDiv.id = "loading-draft";
+    document.querySelector("form").prepend(loadingDiv);
+
+    await loadTicketDraftFormFromEditToken(editToken);
+
+    // Remove loading message
+    const div = document.getElementById("loading-draft");
+    if (div) div.remove();
 } else {
     // Invalid state
     showPageState("state-unknown");
