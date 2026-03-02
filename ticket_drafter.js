@@ -105,8 +105,18 @@ if (!state || state === "form") {
     loadingDiv.textContent = "Loading your draft...";
     loadingDiv.id = "loading-draft";
     document.querySelector("form").prepend(loadingDiv);
-
-    await loadTicketDraftFormFromEditToken(editToken);
+    
+    // async IIFE for fetching draft
+    async function async_loader() {
+        try {
+            await loadTicketDraftFormFromEditToken(editToken);
+            console.log("Draft loaded!");
+        } catch (err) {
+            console.error("Failed to load draft:", err);
+            showPageState("state-unknown");
+        }
+    };
+    async_loader();
 
     // Remove loading message
     const div = document.getElementById("loading-draft");
