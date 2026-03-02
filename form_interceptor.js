@@ -1,5 +1,7 @@
 /*
- * Intercept form submission, validate with AJV, and send JSON payload.
+ * Intercept form submission and validate with AJV.
+ * If invalid → show field errors.
+ * If valid → allow normal POST to n8n.
  */
 
 import Ajv2020 from 'https://esm.sh/ajv/dist/2020.js';
@@ -8,9 +10,7 @@ import addFormats from 'https://esm.sh/ajv-formats';
 const ajv = new Ajv2020({ allErrors: true });
 addFormats(ajv);
 
-// JSON schema for form validation
 const schema = {
-  title: "Ticket Submission Form",
   type: "object",
   additionalProperties: false,
   required: [
@@ -36,48 +36,55 @@ const schema = {
 };
 
 const validate = ajv.compile(schema);
-
 const form = document.querySelector("form");
 
-form.addEventListener("submit", async (e) => {
-  e.preventDefault();
+function clearErrors() {
+  document.querySelectorAll(".error").forEach(el => el.textContent = "");
+  document.querySelectorAll("input, select, textarea")
+    .forEach(el => el.classList.remove("input-error"));
+}
 
-  // Get raw form data
+function showErrors(errors) {
+  const friendlyMessages = {
+    minLength: "This field cannot be empty.",
+    format: "Please enter a valid email address.",
+    enum: "Please select a valid option.",
+    required: "This field is required."
+  };
+
+  errors.forEach(err => {
+    let field = err.instancePath.replace("/", "");
+
+    // Handle required errors (instancePath is empty)
+    if (err.keyword === "required") {
+      field = err.params.missingProperty;
+    }
+
+    const message = friendlyMessages[err.keyword] || err.message;
+
+    const input = document.querySelector(`[name="${field}"]`);
+    const errorEl = document.querySelector(`[data-error-for="${field}"]`);
+
+    if (input) input.classList.add("input-error");
+    if (errorEl) errorEl.textContent = message;
+  });
+}
+
+form.addEventListener("submit", (e) => {
+  clearErrors();
+
   const formData = new FormData(form);
   const rawPayload = Object.fromEntries(formData.entries());
 
-  // Filter to only schema-defined fields
   const allowedKeys = Object.keys(schema.properties);
   const filteredPayload = Object.fromEntries(
-    Object.entries(rawPayload).filter(([key]) => allowedKeys.includes(key))
+    Object.entries(rawPayload).filter(([key]) =>
+      allowedKeys.includes(key)
+    )
   );
 
-  // Validate raw payload
   if (!validate(filteredPayload)) {
-    console.error("Form payload does not comply with schema:", validate.errors);
-    return;
-  }
-
-  // Convert aiTicketDrafterEnabled to boolean after validation
-  const payload = {
-    ...filteredPayload,
-    aiTicketDrafterEnabled: filteredPayload.aiTicketDrafterEnabled === "Yes"
-  };
-
-  // Submit payload via fetch
-  try {
-    const res = await fetch(form.action, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload)
-    });
-
-    if (!res.ok) {
-      throw new Error(`Server returned ${res.status}`);
-    }
-
-    console.log("Form submitted successfully!");
-  } catch (err) {
-    console.error("Failed to submit form:", err);
+    e.preventDefault();
+    showErrors(validate.errors);
   }
 });

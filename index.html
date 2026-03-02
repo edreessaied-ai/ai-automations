@@ -38,17 +38,10 @@
       box-shadow: 0 12px 28px rgba(0,0,0,0.08);
     }
 
-    #state-new {
-      border-top: 6px solid #6b8f7a;
-    }
+    #state-new { border-top: 6px solid #6b8f7a; }
+    #state-invalid-edit { border-top: 6px solid #b0893f; }
 
-    #state-invalid-edit {
-      border-top: 6px solid #b0893f;
-    }
-
-    form {
-      margin-top: 32px;
-    }
+    form { margin-top: 32px; }
 
     label {
       display: block;
@@ -59,9 +52,7 @@
       color: #4a3c28;
     }
 
-    input,
-    select,
-    textarea {
+    input, select, textarea {
       width: 100%;
       padding: 16px;
       font-size: 18px;
@@ -100,49 +91,29 @@
       transition: background-color 0.2s ease, transform 0.1s ease;
     }
 
-    .btn:hover {
-      transform: translateY(-1px);
+    .btn:hover { transform: translateY(-1px); }
+
+    .btn.disabled { background-color: #9ca3af; cursor: not-allowed; }
+    .btn.navy { background-color: #0a2540; color: #fff; }
+    .btn.navy:hover { background-color: #081e33; }
+    .btn.pine { background-color: #1f7a63; color: #fff; }
+    .btn.pine:hover { background-color: #185f4e; }
+    .btn.lead { background-color: #1f7a63; color: #fff; }
+    .btn.lead:hover { background-color: #185f4e; }
+
+    .actions { text-align: center; margin-top: 32px; }
+    .hidden { display: none; }
+
+    /* ===== Validation Styles ===== */
+    .error {
+      color: #b91c1c;
+      font-size: 14px;
+      margin-top: 6px;
     }
 
-    .btn.disabled {
-      background-color: #9ca3af;
-      cursor: not-allowed;
-    }
-
-    .btn.navy {
-      background-color: #0a2540;
-      color: #fff;
-    }
-
-    .btn.navy:hover {
-      background-color: #081e33;
-    }
-
-    .btn.pine {
-      background-color: #1f7a63;
-      color: #fff;
-    }
-
-    .btn.pine:hover {
-      background-color: #185f4e;
-    }
-
-    .btn.lead {
-      background-color: #1f7a63;
-      color: #fff;
-    }
-
-    .btn.lead:hover {
-      background-color: #185f4e;
-    }
-
-    .actions {
-      text-align: center;
-      margin-top: 32px;
-    }
-
-    .hidden {
-      display: none;
+    .input-error {
+      border-color: #b91c1c;
+      background-color: #fff5f5;
     }
   </style>
 
@@ -156,11 +127,14 @@
     <p>Fill out the form below to generate a Jira ticket draft.</p>
 
     <form method="POST" action="https://edreessaied.app.n8n.cloud/webhook/jira-ticket-drafter/">
+
       <label for="ticketTitle">Ticket Title</label>
       <input id="ticketTitle" name="ticketTitle" type="text" required placeholder="Short, descriptive title" />
+      <div class="error" data-error-for="ticketTitle"></div>
 
       <label for="ticketDescription">Ticket Description</label>
       <textarea id="ticketDescription" name="ticketDescription" required placeholder="Describe the issue, expected behavior, impact, etc."></textarea>
+      <div class="error" data-error-for="ticketDescription"></div>
 
       <label for="ticketType">Ticket Type</label>
       <select id="ticketType" name="ticketType" required>
@@ -171,6 +145,7 @@
         <option>Story</option>
         <option>Epic</option>
       </select>
+      <div class="error" data-error-for="ticketType"></div>
 
       <label for="ticketImpact">Ticket Impact</label>
       <select id="ticketImpact" name="ticketImpact" required>
@@ -180,21 +155,25 @@
         <option>Minor</option>
         <option>Internal</option>
       </select>
+      <div class="error" data-error-for="ticketImpact"></div>
 
       <label for="assigneeTeam">Assignee Team</label>
       <select id="assigneeTeam" name="assigneeTeam" required>
         <option value="">Select…</option>
         <option>Captains of the World</option>
       </select>
+      <div class="error" data-error-for="assigneeTeam"></div>
 
       <label for="assignee">Assignee</label>
       <select id="assignee" name="assignee" required>
         <option value="">Select…</option>
         <option>Edrees Saied</option>
       </select>
+      <div class="error" data-error-for="assignee"></div>
 
       <label for="userEmail">Your Email Address</label>
       <input id="userEmail" name="userEmail" type="email" required placeholder="you@company.com" />
+      <div class="error" data-error-for="userEmail"></div>
 
       <label for="aiTicketDrafterEnabled">Do you want AI to enhance this draft?</label>
       <select id="aiTicketDrafterEnabled" name="aiTicketDrafterEnabled" required>
@@ -202,6 +181,7 @@
         <option>Yes</option>
         <option>No</option>
       </select>
+      <div class="error" data-error-for="aiTicketDrafterEnabled"></div>
 
       <div class="actions">
         <button type="submit" class="btn lead">Generate Draft</button>
@@ -240,8 +220,6 @@
 
   <!-- ===== Process Form Submission ===== -->
   <script type="module" src="form_interceptor.js"></script>
-
-  <!-- ===== Ticket Drafter Script ===== -->
   <script src="ticket_drafter.js"></script>
 </body>
 </html>
