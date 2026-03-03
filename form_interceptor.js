@@ -4,11 +4,7 @@
  * If valid → allow normal POST to n8n.
  */
 
-import Ajv2020 from 'https://esm.sh/ajv/dist/2020.js';
-import addFormats from 'https://esm.sh/ajv-formats';
-
-const ajv = new Ajv2020({ allErrors: true });
-addFormats(ajv);
+import { validate } from "./ticket_schema.js";
 
 const schema = {
   type: "object",
@@ -35,7 +31,6 @@ const schema = {
   }
 };
 
-const validate = ajv.compile(schema);
 const form = document.querySelector("form");
 
 function clearErrors() {

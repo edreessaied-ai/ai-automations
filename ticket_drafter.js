@@ -3,6 +3,8 @@
     Handles support for creating new drafts and editing existing ones.
 */
 
+import { validate } from "./ticket_schema.js";
+
 // URL to fetch existing draft data for editing
 const BASE_FORM_URL = "https://dev.aiautomations.engineering/";
 const FORM_SUBMISSION_URL = "https://edreessaied.app.n8n.cloud/webhook/form-submission";
@@ -46,7 +48,7 @@ async function loadTicketDraftFormFromEditToken(editToken, options = {}) {
             }
 
             const data = await res.json();
-            // Validate API contract
+            // Validate data response of N8N workflow
             if (!validate(data)) {
                 console.error("API contract violation:", validate.errors);
                 showPageState("state-unknown");
@@ -66,6 +68,7 @@ async function loadTicketDraftFormFromEditToken(editToken, options = {}) {
             showPageState("state-new");
             break; // Exit loop on success
         } catch (err) {
+            console.err(`Attempt ${attempt} failed:`, err);
             if (attempt === retries) {
                 console.error("All attempts failed:", err);
                 showPageState("state-unknown");
