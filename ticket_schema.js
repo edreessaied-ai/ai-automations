@@ -34,3 +34,13 @@ export const schema = {
 };
 
 export const validate = ajv.compile(schema);
+
+function validateTicketDraftData(data) {
+    const valid = validate(data);
+    if (!valid) {
+        console.error("Ticket draft contract violation: ", validate.errors);
+        throw new Error(
+            "Received invalid ticket data format from server: " + JSON.stringify(validate.errors)
+        );
+    }
+}

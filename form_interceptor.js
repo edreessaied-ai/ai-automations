@@ -4,7 +4,7 @@
  * If valid → allow normal POST to n8n.
  */
 
-import { validate } from "./ticket_schema.js";
+import { validate, validateTicketDraftData } from "./ticket_schema.js";
 
 const schema = {
   type: "object",
@@ -78,8 +78,12 @@ form.addEventListener("submit", (e) => {
     )
   );
 
-  if (!validate(filteredPayload)) {
-    e.preventDefault();
+  // Validate against AJV schema and show errors if invalid. If valid, allow form submission to proceed as normal.
+  try {
+    validateTicketDraftData(filteredPayload);
+  } catch (err) {
+    console.error("Validation error:", err);
     showErrors(validate.errors);
+    e.preventDefault();
   }
 });

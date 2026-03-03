@@ -3,7 +3,7 @@
     Handles support for creating new drafts and editing existing ones.
 */
 
-import { validate } from "./ticket_schema.js";
+import { validate, validateTicketDraftData } from "./ticket_schema.js";
 
 // URL to fetch existing draft data for editing
 const BASE_FORM_URL = "https://dev.aiautomations.engineering/";
@@ -49,11 +49,7 @@ async function loadTicketDraftFormFromEditToken(editToken, options = {}) {
 
             const data = await res.json();
             // Validate data response of N8N workflow
-            if (!validate(data)) {
-                console.error("API contract violation:", validate.errors);
-                showPageState("state-unknown");
-                return;
-            }
+            validateTicketDraftData(data);
 
             // Populate fields
             document.getElementById("ticketTitle").value = data.ticketTitle || "";
@@ -68,14 +64,16 @@ async function loadTicketDraftFormFromEditToken(editToken, options = {}) {
             showPageState("state-new");
             break; // Exit loop on success
         } catch (err) {
-            console.err(`Attempt ${attempt} failed:`, err);
+            console.error("Discovered error trying to load ticket draft: ", err);
             if (attempt === retries) {
-                console.error("All attempts failed:", err);
+                console.error(
+                    "Exhausted retries for loading ticket draft data. Failing with the following error: ",
+                    err
+                );
                 showPageState("state-unknown");
                 return;
             }
-
-            console.warn(`Attempt ${attempt} failed. Retrying...`);
+            console.warn("Failed to load ticket draft data. Retrying...");
             await new Promise(resolve => setTimeout(resolve, retryDelayMs));
         }
     }
