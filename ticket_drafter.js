@@ -46,10 +46,16 @@ async function loadTicketDraftFormFromEditToken(editToken, options = {}) {
             }
 
             const data = await res.json();
+            // Validate API contract
+            if (!validate(data)) {
+                console.error("API contract violation:", validate.errors);
+                showPageState("state-unknown");
+                return;
+            }
 
             // Populate fields
-            document.getElementById("ticketTitle").value = data.ticketTitle || "Unknown Title";
-            document.getElementById("ticketDescription").value = data.ticketDescription || "Unknown Description";
+            document.getElementById("ticketTitle").value = data.ticketTitle || "";
+            document.getElementById("ticketDescription").value = data.ticketDescription || "";
             document.getElementById("ticketType").value = data.ticketType || "";
             document.getElementById("ticketImpact").value = data.ticketImpact || "";
             document.getElementById("assigneeTeam").value = data.assigneeTeam || "";
