@@ -1,35 +1,10 @@
 /*
- * Intercept form submission and validate with AJV.
- * If invalid → show field errors.
- * If valid → allow normal POST to n8n.
+ * Intercept form submission and validate the schema.
+ * If invalid -> show errors and prevent form submission.
+ * If valid -> allow form submission to proceed as normal.
  */
 
 import { validate, validateTicketDraftData } from "./ticket_schema.js";
-
-const schema = {
-  type: "object",
-  additionalProperties: false,
-  required: [
-    "ticketTitle",
-    "ticketDescription",
-    "ticketType",
-    "ticketImpact",
-    "assigneeTeam",
-    "assignee",
-    "userEmail",
-    "aiTicketDrafterEnabled"
-  ],
-  properties: {
-    ticketTitle: { type: "string", minLength: 1 },
-    ticketDescription: { type: "string", minLength: 1 },
-    ticketType: { type: "string", enum: ["Bug", "Feature", "Task", "Story", "Epic"] },
-    ticketImpact: { type: "string", enum: ["Major", "Urgent", "Minor", "Internal"] },
-    assigneeTeam: { type: "string", enum: ["Captains of the World"] },
-    assignee: { type: "string", enum: ["Edrees Saied"] },
-    userEmail: { type: "string", format: "email", minLength: 1 },
-    aiTicketDrafterEnabled: { type: "string", enum: ["Yes", "No"] }
-  }
-};
 
 const form = document.querySelector("form");
 
@@ -69,21 +44,12 @@ form.addEventListener("submit", (e) => {
   clearErrors();
 
   const formData = new FormData(form);
-  const rawPayload = Object.fromEntries(formData.entries());
-
-  const allowedKeys = Object.keys(schema.properties);
-  const filteredPayload = Object.fromEntries(
-    Object.entries(rawPayload).filter(([key]) =>
-      allowedKeys.includes(key)
-    )
-  );
+  const payload = Object.fromEntries(formData.entries());
 
   // Validate against AJV schema and show errors if invalid. If valid, allow form submission to proceed as normal.
   try {
-    validateTicketDraftData(filteredPayload);
+    validateTicketDraftData(payload);
   } catch (err) {
-    console.error("Validation error:", err);
-    showErrors(validate.errors);
     e.preventDefault();
   }
 });
