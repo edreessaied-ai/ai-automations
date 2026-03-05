@@ -1,225 +1,314 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Jira Ticket Drafter</title>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Jira Ticket Drafter</title>
 
-  <style>
-    /* ===== Page Base ===== */
-    body {
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      max-width: 600px;
-      margin: 80px auto;
-      padding: 0 20px;
-      background-color: #f6f1e7;
-    }
+<style>
 
-    h1 {
-      color: #3a2f1c;
-      font-size: 42px;
-      margin-bottom: 24px;
-      text-align: center;
-    }
+/* ===== Page Base ===== */
 
-    p {
-      font-size: 20px;
-      line-height: 1.7;
-      margin-bottom: 32px;
-      text-align: center;
-      color: #5a4a32;
-    }
+body {
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  max-width: 600px;
+  margin: 80px auto;
+  padding: 0 20px;
+  background-color: #f6f1e7;
+}
 
-    section {
-      margin-bottom: 40px;
-      background-color: #fffaf2;
-      border-radius: 16px;
-      padding: 44px 40px 48px;
-      box-shadow: 0 12px 28px rgba(0,0,0,0.08);
-    }
+h1 {
+  color: #3a2f1c;
+  font-size: 42px;
+  margin-bottom: 24px;
+  text-align: center;
+}
 
-    #state-new { border-top: 6px solid #6b8f7a; }
-    #state-invalid-edit { border-top: 6px solid #b0893f; }
+p {
+  font-size: 20px;
+  line-height: 1.7;
+  margin-bottom: 32px;
+  text-align: center;
+  color: #5a4a32;
+}
 
-    form { margin-top: 32px; }
+section {
+  margin-bottom: 40px;
+  background-color: #fffaf2;
+  border-radius: 16px;
+  padding: 44px 40px 48px;
+  box-shadow: 0 12px 28px rgba(0,0,0,0.08);
+}
 
-    label {
-      display: block;
-      font-weight: 600;
-      margin-top: 28px;
-      margin-bottom: 10px;
-      font-size: 18px;
-      color: #4a3c28;
-    }
+#state-new { border-top: 6px solid #6b8f7a; }
+#state-invalid-edit { border-top: 6px solid #b0893f; }
+#state-loading { border-top: 6px solid #6b8f7a; text-align: center; }
 
-    input, select, textarea {
-      width: 100%;
-      padding: 16px;
-      font-size: 18px;
-      border-radius: 10px;
-      border: 1px solid #d6cbb8;
-      box-sizing: border-box;
-      background-color: #fffdf9;
-    }
+form { margin-top: 32px; }
 
-    textarea {
-      min-height: 180px;
-      max-height: 90vh;
-      resize: both;
-      overflow: auto;
-      transition: background-color 0.2s ease, box-shadow 0.2s ease;
-    }
+label {
+  display: block;
+  font-weight: 600;
+  margin-top: 28px;
+  margin-bottom: 10px;
+  font-size: 18px;
+  color: #4a3c28;
+}
 
-    .fullscreen-textarea {
-      position: fixed;
-      inset: 20px;
-      width: auto !important;
-      height: auto !important;
-      z-index: 9999;
-      background-color: #fffdf5;
-      box-shadow: 0 0 0 100vmax rgba(0,0,0,0.35);
-    }
+input, select, textarea {
+  width: 100%;
+  padding: 16px;
+  font-size: 18px;
+  border-radius: 10px;
+  border: 1px solid #d6cbb8;
+  box-sizing: border-box;
+  background-color: #fffdf9;
+}
 
-    .btn {
-      display: inline-block;
-      margin-top: 36px;
-      padding: 16px 32px;
-      font-size: 18px;
-      border-radius: 12px;
-      border: none;
-      cursor: pointer;
-      transition: background-color 0.2s ease, transform 0.1s ease;
-    }
+textarea {
+  min-height: 180px;
+  max-height: 90vh;
+  resize: both;
+  overflow: auto;
+  transition: background-color 0.2s ease, box-shadow 0.2s ease;
+}
 
-    .btn:hover { transform: translateY(-1px); }
+.fullscreen-textarea {
+  position: fixed;
+  inset: 20px;
+  width: auto !important;
+  height: auto !important;
+  z-index: 9999;
+  background-color: #fffdf5;
+  box-shadow: 0 0 0 100vmax rgba(0,0,0,0.35);
+}
 
-    .btn.disabled { background-color: #9ca3af; cursor: not-allowed; }
-    .btn.navy { background-color: #0a2540; color: #fff; }
-    .btn.navy:hover { background-color: #081e33; }
-    .btn.pine { background-color: #1f7a63; color: #fff; }
-    .btn.pine:hover { background-color: #185f4e; }
-    .btn.lead { background-color: #1f7a63; color: #fff; }
-    .btn.lead:hover { background-color: #185f4e; }
+/* ===== Buttons ===== */
 
-    .actions { text-align: center; margin-top: 32px; }
-    .hidden { display: none; }
+.btn {
+  display: inline-block;
+  margin-top: 36px;
+  padding: 16px 32px;
+  font-size: 18px;
+  border-radius: 12px;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.2s ease, transform 0.1s ease;
+}
 
-    /* ===== Validation Styles ===== */
-    .error {
-      color: #b91c1c;
-      font-size: 14px;
-      margin-top: 6px;
-    }
+.btn:hover { transform: translateY(-1px); }
 
-    .input-error {
-      border-color: #b91c1c;
-      background-color: #fff5f5;
-    }
-  </style>
+.btn.disabled { background-color: #9ca3af; cursor: not-allowed; }
 
-  <link rel="icon" href="/form.png" type="image/png">
+.btn.navy {
+  background-color: #0a2540;
+  color: #fff;
+}
+
+.btn.navy:hover {
+  background-color: #081e33;
+}
+
+.btn.pine {
+  background-color: #1f7a63;
+  color: #fff;
+}
+
+.btn.pine:hover {
+  background-color: #185f4e;
+}
+
+.btn.lead {
+  background-color: #1f7a63;
+  color: #fff;
+}
+
+.btn.lead:hover {
+  background-color: #185f4e;
+}
+
+.actions {
+  text-align: center;
+  margin-top: 32px;
+}
+
+.hidden {
+  display: none;
+}
+
+/* ===== Validation ===== */
+
+.error {
+  color: #b91c1c;
+  font-size: 14px;
+  margin-top: 6px;
+}
+
+.input-error {
+  border-color: #b91c1c;
+  background-color: #fff5f5;
+}
+
+/* ===== Loading Spinner ===== */
+
+.loading-spinner {
+  margin: 30px auto 12px;
+  width: 44px;
+  height: 44px;
+  border: 4px solid #d6cbb8;
+  border-top-color: #1f7a63;
+  border-radius: 50%;
+  animation: spin 0.9s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.loading-text {
+  font-size: 18px;
+  color: #5a4a32;
+}
+
+</style>
+
+<link rel="icon" href="/form.png" type="image/png">
+
 </head>
 
 <body>
-  <!-- ===== New Form / Edit Form (same form) ===== -->
-  <section id="state-new">
-    <h1>Jira Ticket Drafter</h1>
-    <p>Fill out the form below to generate a Jira ticket draft.</p>
 
-    <form method="POST" action="https://edreessaied.app.n8n.cloud/webhook/jira-ticket-drafter/">
+<!-- ===== Loading State ===== -->
 
-      <label for="ticketTitle">Ticket Title</label>
-      <input id="ticketTitle" name="ticketTitle" type="text" required placeholder="Short, descriptive title" />
-      <div class="error" data-error-for="ticketTitle"></div>
+<section id="state-loading" class="hidden">
+  <h1>Loading Draft</h1>
+  <div class="loading-spinner"></div>
+  <p class="loading-text">Fetching your ticket draft...</p>
+</section>
 
-      <label for="ticketDescription">Ticket Description</label>
-      <textarea id="ticketDescription" name="ticketDescription" required placeholder="Describe the issue, expected behavior, impact, etc."></textarea>
-      <div class="error" data-error-for="ticketDescription"></div>
+<!-- ===== New / Edit Form ===== -->
 
-      <label for="ticketType">Ticket Type</label>
-      <select id="ticketType" name="ticketType" required>
-        <option value="">Select…</option>
-        <option>Bug</option>
-        <option>Feature</option>
-        <option>Task</option>
-        <option>Story</option>
-        <option>Epic</option>
-      </select>
-      <div class="error" data-error-for="ticketType"></div>
+<section id="state-new">
+<h1>Jira Ticket Drafter</h1>
+<p>Fill out the form below to generate a Jira ticket draft.</p>
 
-      <label for="ticketImpact">Ticket Impact</label>
-      <select id="ticketImpact" name="ticketImpact" required>
-        <option value="">Select…</option>
-        <option>Major</option>
-        <option>Urgent</option>
-        <option>Minor</option>
-        <option>Internal</option>
-      </select>
-      <div class="error" data-error-for="ticketImpact"></div>
+<form method="POST" action="https://edreessaied.app.n8n.cloud/webhook/jira-ticket-drafter/">
 
-      <label for="assigneeTeam">Assignee Team</label>
-      <select id="assigneeTeam" name="assigneeTeam" required>
-        <option value="">Select…</option>
-        <option>Captains of the World</option>
-      </select>
-      <div class="error" data-error-for="assigneeTeam"></div>
+<label for="ticketTitle">Ticket Title</label>
+<input id="ticketTitle" name="ticketTitle" type="text" required placeholder="Short, descriptive title" />
+<div class="error" data-error-for="ticketTitle"></div>
 
-      <label for="assignee">Assignee</label>
-      <select id="assignee" name="assignee" required>
-        <option value="">Select…</option>
-        <option>Edrees Saied</option>
-      </select>
-      <div class="error" data-error-for="assignee"></div>
+<label for="ticketDescription">Ticket Description</label>
+<textarea id="ticketDescription" name="ticketDescription" required placeholder="Describe the issue, expected behavior, impact, etc."></textarea>
+<div class="error" data-error-for="ticketDescription"></div>
 
-      <label for="userEmail">Your Email Address</label>
-      <input id="userEmail" name="userEmail" type="email" required placeholder="you@company.com" />
-      <div class="error" data-error-for="userEmail"></div>
+<label for="ticketType">Ticket Type</label>
+<select id="ticketType" name="ticketType" required>
+<option value="">Select…</option>
+<option>Bug</option>
+<option>Feature</option>
+<option>Task</option>
+<option>Story</option>
+<option>Epic</option>
+</select>
+<div class="error" data-error-for="ticketType"></div>
 
-      <label for="aiTicketDrafterEnabled">Do you want AI to enhance this draft?</label>
-      <select id="aiTicketDrafterEnabled" name="aiTicketDrafterEnabled" required>
-        <option value="">Select…</option>
-        <option>Yes</option>
-        <option>No</option>
-      </select>
-      <div class="error" data-error-for="aiTicketDrafterEnabled"></div>
+<label for="ticketImpact">Ticket Impact</label>
+<select id="ticketImpact" name="ticketImpact" required>
+<option value="">Select…</option>
+<option>Major</option>
+<option>Urgent</option>
+<option>Minor</option>
+<option>Internal</option>
+</select>
+<div class="error" data-error-for="ticketImpact"></div>
 
-      <div class="actions">
-        <button type="submit" class="btn lead">Generate Draft</button>
-      </div>
-    </form>
-  </section>
+<label for="assigneeTeam">Assignee Team</label>
+<select id="assigneeTeam" name="assigneeTeam" required>
+<option value="">Select…</option>
+<option>Captains of the World</option>
+</select>
+<div class="error" data-error-for="assigneeTeam"></div>
 
-  <!-- ===== Submitted State ===== -->
-  <section id="state-submitted" class="hidden">
-    <h1>Form Submitted!</h1>
-    <p>
-      Your form has been submitted successfully.<br>
-      You may edit your submission or create a new one.
-    </p>
+<label for="assignee">Assignee</label>
+<select id="assignee" name="assignee" required>
+<option value="">Select…</option>
+<option>Edrees Saied</option>
+</select>
+<div class="error" data-error-for="assignee"></div>
 
-    <div class="actions">
-      <a id="edit-form" class="btn navy">Edit your form</a>
-      <a id="new-form" class="btn pine">Submit a new form</a>
-    </div>
-  </section>
+<label for="userEmail">Your Email Address</label>
+<input id="userEmail" name="userEmail" type="email" required placeholder="you@company.com" />
+<div class="error" data-error-for="userEmail"></div>
 
-  <!-- ===== Invalid Edit ===== -->
-  <section id="state-invalid-edit" class="hidden">
-    <h1>This form cannot be edited</h1>
-    <p>The edit link you used is invalid or has expired.</p>
-    <div class="actions">
-      <a id="new-form-invalid" class="btn pine" href="https://dev.aiautomations.engineering/">Submit a new form</a>
-    </div>
-  </section>
+<label for="aiTicketDrafterEnabled">Do you want AI to enhance this draft?</label>
+<select id="aiTicketDrafterEnabled" name="aiTicketDrafterEnabled" required>
+<option value="">Select…</option>
+<option>Yes</option>
+<option>No</option>
+</select>
+<div class="error" data-error-for="aiTicketDrafterEnabled"></div>
 
-  <!-- ===== Unknown State ===== -->
-  <section id="state-unknown" class="hidden">
-    <h1>This page cannot be opened</h1>
-    <p>This page was opened with an invalid or unsupported link.</p>
-  </section>
+<div class="actions">
+<button type="submit" class="btn lead">Generate Draft</button>
+</div>
 
-  <!-- ===== Process Form Submission ===== -->
-  <script type="module" src="form_interceptor.js"></script>
-  <script type="module" src="ticket_drafter.js"></script>
+</form>
+</section>
+
+<!-- ===== Submitted State ===== -->
+
+<section id="state-submitted" class="hidden">
+<h1>Form Submitted!</h1>
+
+<p>
+Your form has been submitted successfully.<br>
+You may edit your submission or create a new one.
+</p>
+
+<div class="actions">
+<a id="edit-form" class="btn navy">Edit your form</a>
+<a id="new-form" class="btn pine">Submit a new form</a>
+</div>
+
+</section>
+
+<!-- ===== Invalid Edit ===== -->
+
+<section id="state-invalid-edit" class="hidden">
+
+<h1>This form cannot be edited</h1>
+
+<p>
+The edit link you used is invalid or has expired.
+</p>
+
+<div class="actions">
+<a id="new-form-invalid"
+class="btn pine"
+href="https://dev.aiautomations.engineering/">
+Submit a new form
+</a>
+</div>
+
+</section>
+
+<!-- ===== Unknown State ===== -->
+
+<section id="state-unknown" class="hidden">
+
+<h1>This page cannot be opened</h1>
+
+<p>
+This page was opened with an invalid or unsupported link.
+</p>
+
+</section>
+
+<!-- ===== Scripts ===== -->
+
+<script type="module" src="form_interceptor.js"></script>
+<script type="module" src="ticket_drafter.js"></script>
+
 </body>
 </html>

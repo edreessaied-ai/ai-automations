@@ -107,7 +107,8 @@ if (!state || state === "form") {
     showPageState("state-submitted");
 } else if (state === "edit") {
     // Show a temporary loading message
-    showPageState("state-new"); // show the form immediately
+    showPageState("state-loading");
+    
     const loadingDiv = document.createElement("div");
     loadingDiv.textContent = "Loading your draft...";
     loadingDiv.id = "loading-draft";
@@ -123,7 +124,7 @@ if (!state || state === "form") {
             showPageState("state-unknown");
         }
     };
-    async_loader();
+    await async_loader();
 
     // Remove loading message
     const div = document.getElementById("loading-draft");
