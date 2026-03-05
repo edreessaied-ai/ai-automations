@@ -50,6 +50,7 @@ form.addEventListener("submit", (e) => {
   try {
     validateTicketDraftData(payload);
   } catch (err) {
+    console.error("Form validation failed: ", err);
     e.preventDefault();
   }
 });
