@@ -4,6 +4,8 @@
 */
 
 import { validate, validateTicketDraftData } from "./ticket_schema.js";
+import { TicketDraftError } from "./ticket_drafter_utilities.js";
+
 
 // URL to fetch existing draft data for editing
 const BASE_FORM_URL = "https://dev.aiautomations.engineering/";
@@ -64,16 +66,10 @@ async function loadTicketDraftFormFromEditToken(editToken, options = {}) {
             showPageState("state-new");
             break; // Exit loop on success
         } catch (err) {
-            console.error("Discovered error trying to load ticket draft: ", err);
             if (attempt === retries) {
-                console.error(
-                    "Exhausted retries for loading ticket draft data. Failing with the following error: ",
-                    err
-                );
-                showPageState("state-unknown");
-                return;
+                throw new TicketDraftError("Failed to load ticket draft data from server.");
             }
-            console.warn("Failed to load ticket draft data. Retrying...");
+            console.error("Failed to load ticket draft data; retrying... ", err);
             await new Promise(resolve => setTimeout(resolve, retryDelayMs));
         }
     }
@@ -108,23 +104,18 @@ if (!state || state === "form") {
 } else if (state === "edit") {
     // Show a temporary loading message
     showPageState("state-loading");
-    
+
     const loadingDiv = document.createElement("div");
     loadingDiv.textContent = "Loading your draft...";
     loadingDiv.id = "loading-draft";
     document.querySelector("form").prepend(loadingDiv);
     
     // async IIFE for fetching draft
-    async function async_loader() {
-        try {
-            await loadTicketDraftFormFromEditToken(editToken);
-            console.log("Draft loaded!");
-        } catch (err) {
-            console.error("Failed to load draft:", err);
-            showPageState("state-unknown");
-        }
-    };
-    await async_loader();
+    try {
+        await loadTicketDraftFormFromEditToken(editToken);
+    } catch (err) {
+        showPageState("state-error");
+    }
 
     // Remove loading message
     const div = document.getElementById("loading-draft");

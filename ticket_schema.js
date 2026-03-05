@@ -8,6 +8,13 @@ import addFormats from 'https://esm.sh/ajv-formats';
 const ajv = new Ajv2020({ allErrors: true });
 addFormats(ajv);
 
+export class TicketDraftSchemaValidationError extends Error {
+  constructor(message) {
+    super(message);
+    this.name = "TicketDraftSchemaValidationError";
+  }
+}
+
 export const schema = {
   type: "object",
   additionalProperties: false,
@@ -38,9 +45,8 @@ export const validate = ajv.compile(schema);
 export function validateTicketDraftData(data) {
     const valid = validate(data);
     if (!valid) {
-        console.error("Ticket draft contract violation: ", validate.errors);
-        throw new Error(
-            "Invalid ticket data format: " + JSON.stringify(validate.errors)
+        throw new TicketDraftSchemaValidationError(
+            "Ticket draft schema validation failed: " + JSON.stringify(validate.errors)
         );
     }
 }
