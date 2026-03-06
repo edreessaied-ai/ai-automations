@@ -19,7 +19,7 @@ export const FORM_SUBMISSION_WEBHOOK_TO_BACKEND = "https://edreessaied.app.n8n.c
 
  // ===== UI Utility functions =====
 
-function hideAllStates() {
+export function hideAllStates() {
     /* 
         Power to hide all sections on the page,
         used before showing a specific section
@@ -29,7 +29,7 @@ function hideAllStates() {
 }
 
 
-function showPageState(element_id) {
+export function showPageState(element_id) {
     /*
         Show a specific section by ID and hide all others
     */
@@ -45,7 +45,7 @@ function showPageState(element_id) {
 }
 
 
-async function loadTicketDraftFormFromEditToken(editToken, options = {}) {
+export async function loadTicketDraftFormFromEditToken(editToken, options = {}) {
     /*
         Load existing ticket draft data from server using the edit token,
         and populate the form fields for editing.
@@ -96,7 +96,7 @@ async function loadTicketDraftFormFromEditToken(editToken, options = {}) {
 }
 
 
-function initializeFormUI() {
+export function initializeFormUI() {
     /* 
         Fullscreen ticket description box handler
     */
