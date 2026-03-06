@@ -40,9 +40,8 @@ section {
   box-shadow: 0 12px 28px rgba(0,0,0,0.08);
 }
 
-#state-new { border-top: 6px solid #6b8f7a; }
-#state-invalid-edit { border-top: 6px solid #b0893f; }
-#state-loading { border-top: 6px solid #6b8f7a; text-align: center; }
+#form-state { border-top: 6px solid #6b8f7a; }
+#loading-state { border-top: 6px solid #6b8f7a; text-align: center; }
 
 form { margin-top: 32px; }
 
@@ -178,17 +177,9 @@ textarea {
 
 <body>
 
-<!-- ===== Loading State ===== -->
+<!-- ===== Form State ===== -->
 
-<section id="state-loading" class="hidden">
-  <h1>Loading Draft</h1>
-  <div class="loading-spinner"></div>
-  <p class="loading-text">Fetching your ticket draft...</p>
-</section>
-
-<!-- ===== New / Edit Form ===== -->
-
-<section id="state-new">
+<section id="form-state">
 <h1>Jira Ticket Drafter</h1>
 <p>Fill out the form below to generate a Jira ticket draft.</p>
 
@@ -270,31 +261,17 @@ You may edit your submission or create a new one.
 <a id="edit-form" class="btn navy">Edit your form</a>
 <a id="new-form" class="btn pine">Submit a new form</a>
 </div>
-
 </section>
 
-<!-- ===== Invalid Edit ===== -->
-
-<section id="state-invalid-edit" class="hidden">
-
-<h1>This form cannot be edited</h1>
-
-<p>
-The edit link you used is invalid or has expired.
-</p>
-
-<div class="actions">
-<a id="new-form-invalid"
-class="btn pine"
-href="https://dev.aiautomations.engineering/">
-Submit a new form
-</a>
-</div>
-
+<!-- ===== Loading State ===== -->
+<section id="loading-state" class="hidden">
+  <h1>Loading Draft</h1>
+  <div class="loading-spinner"></div>
+  <p class="loading-text">Fetching your ticket draft...</p>
 </section>
+
 
 <!-- ===== Error State ===== -->
-
 <section id="state-error" class="hidden">
 <h1>This page cannot be loaded</h1>
 <p>An error occurred while trying to load this page.</p>
@@ -302,13 +279,12 @@ Submit a new form
 
 
 <!-- ===== Unknown State ===== -->
-<section id="state-unknown" class="hidden">
+<section id="unknown-state" class="hidden">
 <h1>This page cannot be loaded</h1>
-<p>The link you used is invalid or cannot be opened.</p>
+<p>The link you used is invalid or was unrecognized.</p>
 </section>
 
 <!-- ===== Scripts ===== -->
-
 <script type="module" src="form_interceptor.js"></script>
 <script type="module" src="ticket_drafter.js"></script>
 

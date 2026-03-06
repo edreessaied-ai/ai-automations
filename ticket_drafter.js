@@ -3,143 +3,84 @@
     Handles support for creating new drafts and editing existing ones.
 */
 
-import { validate, validateTicketDraftData } from "./ticket_schema.js";
-import { TicketDraftError } from "./ticket_drafter_utilities.js";
+import { 
+    FRONTEND_FORM_LINK,
+    hideAllStates,
+    showPageState,
+    loadTicketDraftFormFromEditToken,
+} from "./ticket_drafter_utilities.js";
 
-
-// URL to fetch existing draft data for editing
-const BASE_FORM_URL = "https://dev.aiautomations.engineering/";
-const FORM_SUBMISSION_URL = "https://edreessaied.app.n8n.cloud/webhook/form-submission";
 
 // Fetch params in the URL
-const params = new URLSearchParams(window.location.search);
-const state = params.get("state");
+const PAGE_PARAMS = new URLSearchParams(window.location.search);
+// Determine which page state to show based on the "state" URL param
+const PAGE_STATE = PAGE_PARAMS.get("state");
 // Parse the edit token if present
-const editToken = params.get("editToken");
+const EDIT_TOKEN = PAGE_PARAMS.get("editToken");
 
 
-function hideAllStates() {
-    // Power to hide all sections
-    document.querySelectorAll("section")
-        .forEach(el => el.classList.add("hidden"));
-}
+async function mainInterface() {
+    /*
+        Core page manager
+        Determines which section to show based on URL params and manages the flow of the application.
+    */
 
-function showPageState(element_id) {
-    // Show the specified section
-    const element = document.getElementById(element_id);
-    if (element) {
-        hideAllStates();
-        element.classList.remove("hidden");
-    }
-}
+    // Fetch params in the URL
+    const pageParams = new URLSearchParams(window.location.search);
+    // Determine which page state to show based on the "state" URL param
+    const pageState = pageParams.get("state");
+    // Parse the edit token if present
+    const editToken = pageParams.get("editToken");
 
-async function loadTicketDraftFormFromEditToken(editToken, options = {}) {
-    const {
-        retries = 30,
-        retryDelayMs = 1000,
-    } = options;
+    // Initially hide all sections until we determine which one to show
+    hideAllStates();
 
-    const url = `${FORM_SUBMISSION_URL}?editToken=${encodeURIComponent(editToken)}`;
+    // If there's no state, show the new form. 
+    // If it's "submitted", show the submitted state.
+    // If it's "edit", load the draft for editing.
+    // Otherwise, show an error.
+    if (!pageState || pageState === "form") {
+        // New form
+        // New form is the default state for now
+        // at least until we implement a default landing page or other states.
+        showPageState("form-state");
+    } else if (pageState === "submitted") {
+        // Submmitted state - show the submitted page with the edit link if edit token is present
+        
+        // Link the new form button to the fresh form page
+        document.getElementById("new-form").href = FRONTEND_FORM_LINK;
 
-    for (let attempt = 1; attempt <= retries; attempt++) {
+        // If there's an edit token, set the edit button href to include the edit token, otherwise disable the edit link
+        const editButtonElement = document.getElementById("edit-form");
+        if (editButtonElement) {
+            if (editToken) {
+                editButtonElement.href =
+                    `${FRONTEND_FORM_LINK}?state=edit&editToken=${encodeURIComponent(editToken)}`;
+            } else {
+                editButtonElement.classList.add("disabled");
+                editButtonElement.removeAttribute("href");
+            }
+        }
+
+        // Show the submission acknowledgment page
+        showPageState("state-submitted");
+    } else if (pageState === "edit") {
+        // Show a temporary loading message
+        showPageState("loading-state");
+        
+        // Fetch the existing ticket draft data using
+        // the edit token and populate the form for editing.
+        // If loading fails, show an error state.
         try {
-            const res = await fetch(url);
-
-            if (!res.ok) {
-                throw new Error(`Request failed: ${res.status}`);
-            }
-
-            const data = await res.json();
-            // Validate data response of N8N workflow
-            validateTicketDraftData(data);
-
-            // Populate fields
-            document.getElementById("ticketTitle").value = data.ticketTitle || "";
-            document.getElementById("ticketDescription").value = data.ticketDescription || "";
-            document.getElementById("ticketType").value = data.ticketType || "";
-            document.getElementById("ticketImpact").value = data.ticketImpact || "";
-            document.getElementById("assigneeTeam").value = data.assigneeTeam || "";
-            document.getElementById("assignee").value = data.assignee || "";
-            document.getElementById("userEmail").value = data.userEmail || "";
-            document.getElementById("aiTicketDrafterEnabled").value = data.aiTicketDrafterEnabled || "";
-
-            showPageState("state-new");
-            break; // Exit loop on success
+            await loadTicketDraftFormFromEditToken(editToken);
         } catch (err) {
-            if (attempt === retries) {
-                throw new TicketDraftError("Failed to load ticket draft data from server.");
-            }
-            console.error("Failed to load ticket draft data; retrying... ", err);
-            await new Promise(resolve => setTimeout(resolve, retryDelayMs));
+            showPageState("state-error");
         }
-    }
-}
-
-// First, hide all sections. We'll show the relevant one based on the state.
-hideAllStates();
-
-// If there's no state, show the new form. 
-// If it's "submitted", show the submitted state.
-// If it's "edit", load the draft for editing.
-// Otherwise, show an error.
-if (!state || state === "form") {
-    // New form
-    showPageState("state-new");
-} else if (state === "submitted") {
-    // Show submitted state
-    document.getElementById("new-form").href = BASE_FORM_URL;
-    const editButtonElement = document.getElementById("edit-form");
-    // if there's an edit button, set the href to include the edit token,
-    // otherwise disable the edit link
-    if (editButtonElement) {
-        if (editToken) {
-            editButtonElement.href =
-                `${BASE_FORM_URL}?state=edit&editToken=${encodeURIComponent(editToken)}`;
-        } else {
-            editButtonElement.classList.add("disabled");
-            editButtonElement.removeAttribute("href");
-        }
-    }
-    showPageState("state-submitted");
-} else if (state === "edit") {
-    // Show a temporary loading message
-    showPageState("state-loading");
-
-    const loadingDiv = document.createElement("div");
-    loadingDiv.textContent = "Loading your draft...";
-    loadingDiv.id = "loading-draft";
-    document.querySelector("form").prepend(loadingDiv);
-    
-    // async IIFE for fetching draft
-    try {
-        await loadTicketDraftFormFromEditToken(editToken);
-    } catch (err) {
-        showPageState("state-error");
-    }
-
-    // Remove loading message
-    const div = document.getElementById("loading-draft");
-    if (div) div.remove();
-} else {
-    // Invalid state
-    showPageState("state-unknown");
-}
-
-// ===== Fullscreen textarea handler =====
-const textarea = document.getElementById("ticketDescription");
-let anchor = null;
-textarea.addEventListener("dblclick", () => {
-    const isFullscreen = textarea.classList.contains("fullscreen-textarea");
-    if (!isFullscreen) {
-        if (!anchor) {
-            const rect = textarea.getBoundingClientRect();
-            anchor = { width: textarea.style.width || rect.width + "px", height: textarea.style.height || rect.height + "px" };
-        }
-        textarea.classList.add("fullscreen-textarea");
     } else {
-        textarea.classList.remove("fullscreen-textarea");
-        textarea.style.width = anchor.width;
-        textarea.style.height = anchor.height;
+        // Invalid state
+        showPageState("unknown-state");
     }
-    textarea.focus();
-});
+}
+
+
+mainInterface();

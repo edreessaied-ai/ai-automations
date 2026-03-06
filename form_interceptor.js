@@ -4,7 +4,8 @@
  * If valid -> allow form submission to proceed as normal.
  */
 
-import { validate, validateTicketDraftData } from "./ticket_schema.js";
+import { validateTicketDraftData } from "./ticket_schema.js";
+import { showPageState } from "./ticket_drafter.js";
 
 const form = document.querySelector("form");
 
@@ -46,11 +47,13 @@ form.addEventListener("submit", (e) => {
   const formData = new FormData(form);
   const payload = Object.fromEntries(formData.entries());
 
-  // Validate against AJV schema and show errors if invalid. If valid, allow form submission to proceed as normal.
+  // Validate against AJV schema and show errors if invalid.
+  // If valid, allow form submission to proceed as normal.
   try {
     validateTicketDraftData(payload);
   } catch (err) {
     console.error("Form validation failed: ", err);
     e.preventDefault();
+    showPageState("state-error"); 
   }
 });
