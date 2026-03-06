@@ -1,7 +1,7 @@
 /*
- * Intercept form submission and validate the schema.
- * If invalid -> show errors and prevent form submission.
- * If valid -> allow form submission to proceed as normal.
+    Intercept form submission and validate the schema.
+    If invalid -> show errors and prevent form submission.
+    If valid -> allow form submission to proceed as normal.
  */
 
 import { validateTicketDraftData } from "./ticket_schema.js";

@@ -1,5 +1,5 @@
 /*
-    * Ticket Drafter Utilities
+    Ticket Drafter Utilities
     Contains utility functions and error classes for the ticket drafter application.
 */
 
@@ -11,9 +11,9 @@ export class TicketDraftError extends Error {
   }
 }
 
-// URL to send or fetch ticket draft data
-const FRONTEND_FORM_LINK = "https://dev.aiautomations.engineering/";
-const FORM_SUBMISSION_WEBHOOK_TO_BACKEND = "https://edreessaied.app.n8n.cloud/webhook/form-submission";
+// URLs to send or fetch ticket draft data
+export const FRONTEND_FORM_LINK = "https://dev.aiautomations.engineering/";
+export const FORM_SUBMISSION_WEBHOOK_TO_BACKEND = "https://edreessaied.app.n8n.cloud/webhook/form-submission";
 
 
 
