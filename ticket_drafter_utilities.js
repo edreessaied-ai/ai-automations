@@ -3,6 +3,8 @@
     Contains utility functions and error classes for the ticket drafter application.
 */
 
+import { validateTicketDraftData } from "./ticket_schema.js"
+
 
 export class TicketDraftError extends Error {
   constructor(message) {
