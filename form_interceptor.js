@@ -50,7 +50,7 @@ form.addEventListener("submit", (e) => {
   // Validate against AJV schema and show errors if invalid.
   // If valid, allow form submission to proceed as normal.
   try {
-    validateTicketDraftData(payload);
+    validateTicketDraftData([payload]);
   } catch (err) {
     console.error("Form validation failed: ", err);
     e.preventDefault();
