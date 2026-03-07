@@ -3,7 +3,10 @@
     Contains utility functions and error classes for the ticket drafter application.
 */
 
-import { validateTicketDraftData } from "./ticket_schema.js"
+import {
+    validateTicketDraftData,
+    TicketDraftSchemaValidationError,
+} from "./ticket_schema.js"
 
 
 export class TicketDraftError extends Error {
@@ -65,25 +68,26 @@ export async function loadTicketDraftFormFromEditToken(editToken, options = {}) 
 
     for (let attempt = 1; attempt <= retries; attempt++) {
         try {
-            const res = await fetch(url);
+            const webhookResponse = await fetch(url);
 
-            if (!res.ok) {
+            if (!webhookResponse.ok) {
                 throw new Error(`Request failed: ${res.status}`);
             }
 
-            const data = await res.json();
+            const webhookData = await webhookResponse.json();
             // Validate data response of N8N workflow
-            validateTicketDraftData(data);
+            validateTicketDraftData(webhookData);
 
             // Populate fields
-            document.getElementById("ticketTitle").value = data.ticketTitle || "";
-            document.getElementById("ticketDescription").value = data.ticketDescription || "";
-            document.getElementById("ticketType").value = data.ticketType || "";
-            document.getElementById("ticketImpact").value = data.ticketImpact || "";
-            document.getElementById("assigneeTeam").value = data.assigneeTeam || "";
-            document.getElementById("assignee").value = data.assignee || "";
-            document.getElementById("userEmail").value = data.userEmail || "";
-            document.getElementById("aiTicketDrafterEnabled").value = data.aiTicketDrafterEnabled || "";
+            formResponse = webhookData[0]
+            document.getElementById("ticketTitle").value = formResponse.ticketTitle || "";
+            document.getElementById("ticketDescription").value = formResponse.ticketDescription || "";
+            document.getElementById("ticketType").value = formResponse.ticketType || "";
+            document.getElementById("ticketImpact").value = formResponse.ticketImpact || "";
+            document.getElementById("assigneeTeam").value = formResponse.assigneeTeam || "";
+            document.getElementById("assignee").value = formResponse.assignee || "";
+            document.getElementById("userEmail").value = formResponse.userEmail || "";
+            document.getElementById("aiTicketDrafterEnabled").value = formResponse.aiTicketDrafterEnabled || "";
 
             showPageState("form-state");
             break; // Exit loop on success

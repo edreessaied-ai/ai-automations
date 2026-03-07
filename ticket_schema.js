@@ -16,27 +16,32 @@ export class TicketDraftSchemaValidationError extends Error {
 }
 
 export const schema = {
-  type: "object",
-  additionalProperties: false,
-  required: [
-    "ticketTitle",
-    "ticketDescription",
-    "ticketType",
-    "ticketImpact",
-    "assigneeTeam",
-    "assignee",
-    "userEmail",
-    "aiTicketDrafterEnabled"
-  ],
-  properties: {
-    ticketTitle: { type: "string", minLength: 1 },
-    ticketDescription: { type: "string", minLength: 1 },
-    ticketType: { type: "string", enum: ["Bug", "Feature", "Task", "Story", "Epic"] },
-    ticketImpact: { type: "string", enum: ["Major", "Urgent", "Minor", "Internal"] },
-    assigneeTeam: { type: "string", enum: ["Captains of the World"] },
-    assignee: { type: "string", enum: ["Edrees Saied"] },
-    userEmail: { type: "string", format: "email", minLength: 1 },
-    aiTicketDrafterEnabled: { type: "string", enum: ["Yes", "No"] }
+  type: "array",
+  minItems: 1,
+  maxItems: 1,
+  items: {
+    type: "object",
+    additionalProperties: false,
+    required: [
+      "ticketTitle",
+      "ticketDescription",
+      "ticketType",
+      "ticketImpact",
+      "assigneeTeam",
+      "assignee",
+      "userEmail",
+      "aiTicketDrafterEnabled"
+    ],
+    properties: {
+      ticketTitle: { type: "string", minLength: 1 },
+      ticketDescription: { type: "string", minLength: 1 },
+      ticketType: { type: "string", enum: ["Bug", "Feature", "Task", "Story", "Epic"] },
+      ticketImpact: { type: "string", enum: ["Major", "Urgent", "Minor", "Internal"] },
+      assigneeTeam: { type: "string", enum: ["Captains of the World"] },
+      assignee: { type: "string", enum: ["Edrees Saied"] },
+      userEmail: { type: "string", format: "email", minLength: 1 },
+      aiTicketDrafterEnabled: { type: "string", enum: ["Yes", "No"] }
+    }
   }
 };
 
