@@ -5,7 +5,7 @@
  */
 
 import { validateTicketDraftData } from "./ticket_schema.js";
-import { showPageState } from "./ticket_drafter.js";
+import { showPageState } from "./ticket_drafter_utilities.js";
 
 const form = document.querySelector("form");
 
