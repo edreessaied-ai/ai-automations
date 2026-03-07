@@ -40,8 +40,13 @@ export const schema = {
       assigneeTeam: { type: "string", enum: ["Captains of the World"] },
       assignee: { type: "string", enum: ["Edrees Saied"] },
       userEmail: { type: "string", format: "email", minLength: 1 },
-      aiTicketDrafterEnabled: { type: "string", enum: ["Yes", "No"] }
-    }
+      aiTicketDrafterEnabled: { type: "string", enum: ["Yes", "No"] },
+      
+      // Optional Fields
+      id: {},
+      createdAt: {},
+      updatedAt: {}
+    },
   }
 };
 
