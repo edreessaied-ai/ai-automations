@@ -60,7 +60,7 @@ export async function loadTicketDraftFormFromEditToken(editToken, options = {}) 
     */
 
     const {
-        retries = 30,
+        retries = 10,
         retryDelayMs = 1000,
     } = options;
 
