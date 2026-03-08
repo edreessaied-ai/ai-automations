@@ -16,6 +16,14 @@ export class TicketDraftError extends Error {
   }
 }
 
+export class TicketDraftDataFetchError extends TicketDraftError {
+  constructor(message) {
+    super(message);
+    this.name = "TicketDraftDataFetchError";
+  }
+}
+
+
 // URLs to send or fetch ticket draft data
 export const FRONTEND_FORM_LINK = "https://dev.aiautomations.engineering/";
 export const FORM_SUBMISSION_WEBHOOK_TO_BACKEND = "https://edreessaied.app.n8n.cloud/webhook/form-submission";
@@ -64,17 +72,27 @@ export async function loadTicketDraftFormFromEditToken(editToken, options = {}) 
         retryDelayMs = 1000,
     } = options;
 
-    const url = `${FORM_SUBMISSION_WEBHOOK_TO_BACKEND}?editToken=${encodeURIComponent(editToken)}`;
+    const webhookUrl = `${FORM_SUBMISSION_WEBHOOK_TO_BACKEND}?editToken=${encodeURIComponent(editToken)}`;
 
     for (let attempt = 1; attempt <= retries; attempt++) {
         try {
-            const webhookResponse = await fetch(url);
+            const webhookResponse = await fetch(webhookUrl);
 
             if (!webhookResponse.ok) {
-                throw new Error(`Request failed: ${res.status}`);
+                throw new TicketDraftDataFetchError(
+                    `Backend request failed: ${webhookResponse.status}`
+                );
+            }
+            // Load the response text and check if it's empty before parsing
+            const responseText = await webhookResponse.text();
+            if (!responseText) {
+                throw new TicketDraftDataFetchError(
+                    `Backend returned an empty response, data might not be available`
+                );
             }
 
-            const webhookData = await webhookResponse.json();
+            // Parse and validate the response data
+            const webhookData = JSON.parse(responseText);
             // Validate data response of N8N workflow
             validateTicketDraftData(webhookData);
 
