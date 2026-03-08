@@ -97,7 +97,7 @@ export async function loadTicketDraftFormFromEditToken(editToken, options = {}) 
             validateTicketDraftData(webhookData);
 
             // Populate fields
-            formResponse = webhookData[0]
+            const formResponse = webhookData[0];
             document.getElementById("ticketTitle").value = formResponse.ticketTitle || "";
             document.getElementById("ticketDescription").value = formResponse.ticketDescription || "";
             document.getElementById("ticketType").value = formResponse.ticketType || "";
