@@ -42,6 +42,7 @@ function showErrors(errors) {
 }
 
 form.addEventListener("submit", (e) => {
+  showPageState("loading-state");
   clearErrors();
 
   const formData = new FormData(form);
