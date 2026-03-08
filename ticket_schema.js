@@ -45,7 +45,8 @@ export const schema = {
       // Optional Fields
       id: {},
       createdAt: {},
-      updatedAt: {}
+      updatedAt: {},
+      editToken: {},
     },
   }
 };
