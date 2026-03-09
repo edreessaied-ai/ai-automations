@@ -85,11 +85,10 @@ async function mainInterface() {
 }
 
 
-// Error handling
 try {
     clearErrors();
-    throw new Error("Test error handling"); // --- IGNORE ---
     mainInterface();
 } catch (err) {
-    showErrors(err.errors);
+    console.error("Error initializing the page: ", err);
+    showPageState("state-error");
 }
