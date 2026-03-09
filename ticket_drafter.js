@@ -8,6 +8,7 @@ import {
     FRONTEND_FORM_LINK,
     hideAllStates,
     loadTicketDraftFormFromEditToken,
+    showErrors,
     showPageState,
 } from "./ticket_drafter_utilities.js";
 
