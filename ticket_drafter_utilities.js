@@ -8,6 +8,7 @@ import {
     TicketDraftSchemaValidationError,
 } from "./ticket_schema.js"
 
+// Custom error classes for better error handling and debugging
 
 export class TicketDraftError extends Error {
   constructor(message) {
@@ -30,7 +31,7 @@ export const FORM_SUBMISSION_WEBHOOK_TO_BACKEND = "https://edreessaied.app.n8n.c
 
 
 
- // ===== UI Utility functions =====
+// ===== UI Utility functions =====
 
 export function hideAllStates() {
     /* 
@@ -56,7 +57,6 @@ export function showPageState(element_id) {
         initializeFormUI();
     }
 }
-
 
 export async function loadTicketDraftFormFromEditToken(editToken, options = {}) {
     /*
@@ -119,7 +119,6 @@ export async function loadTicketDraftFormFromEditToken(editToken, options = {}) 
     }
 }
 
-
 export function initializeFormUI() {
     /* 
         Fullscreen ticket description box handler
@@ -149,4 +148,39 @@ export function initializeFormUI() {
 
         textarea.focus();
     });
+}
+
+// Error handling and display functions for form validation
+
+export function clearErrors() {
+  document.querySelectorAll(".error").forEach(el => el.textContent = "");
+  document.querySelectorAll("input, select, textarea")
+    .forEach(el => el.classList.remove("input-error"));
+}
+
+
+export function showErrors(errors) {
+  const friendlyMessages = {
+    minLength: "This field cannot be empty.",
+    format: "Please enter a valid email address.",
+    enum: "Please select a valid option.",
+    required: "This field is required."
+  };
+
+  errors.forEach(err => {
+    let field = err.instancePath.replace("/", "");
+
+    // Handle required errors (instancePath is empty)
+    if (err.keyword === "required") {
+      field = err.params.missingProperty;
+    }
+
+    const message = friendlyMessages[err.keyword] || err.message;
+
+    const input = document.querySelector(`[name="${field}"]`);
+    const errorEl = document.querySelector(`[data-error-for="${field}"]`);
+
+    if (input) input.classList.add("input-error");
+    if (errorEl) errorEl.textContent = message;
+  });
 }

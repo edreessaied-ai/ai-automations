@@ -5,41 +5,9 @@
  */
 
 import { validateTicketDraftData } from "./ticket_schema.js";
-import { showPageState } from "./ticket_drafter_utilities.js";
+import { showPageState, clearErrors, showErrors } from "./ticket_drafter_utilities.js";
 
 const form = document.querySelector("form");
-
-function clearErrors() {
-  document.querySelectorAll(".error").forEach(el => el.textContent = "");
-  document.querySelectorAll("input, select, textarea")
-    .forEach(el => el.classList.remove("input-error"));
-}
-
-function showErrors(errors) {
-  const friendlyMessages = {
-    minLength: "This field cannot be empty.",
-    format: "Please enter a valid email address.",
-    enum: "Please select a valid option.",
-    required: "This field is required."
-  };
-
-  errors.forEach(err => {
-    let field = err.instancePath.replace("/", "");
-
-    // Handle required errors (instancePath is empty)
-    if (err.keyword === "required") {
-      field = err.params.missingProperty;
-    }
-
-    const message = friendlyMessages[err.keyword] || err.message;
-
-    const input = document.querySelector(`[name="${field}"]`);
-    const errorEl = document.querySelector(`[data-error-for="${field}"]`);
-
-    if (input) input.classList.add("input-error");
-    if (errorEl) errorEl.textContent = message;
-  });
-}
 
 form.addEventListener("submit", (e) => {
   showPageState("loading-state");
@@ -53,7 +21,7 @@ form.addEventListener("submit", (e) => {
   try {
     validateTicketDraftData([payload]);
   } catch (err) {
-    console.error("Form validation failed: ", err);
+    showErrors(err.errors);
     e.preventDefault();
     showPageState("state-error"); 
   }

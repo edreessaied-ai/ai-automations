@@ -4,6 +4,7 @@
 */
 
 import { 
+    clearErrors,
     FRONTEND_FORM_LINK,
     hideAllStates,
     loadTicketDraftFormFromEditToken,
@@ -83,4 +84,11 @@ async function mainInterface() {
 }
 
 
-mainInterface();
+// Error handling
+try {
+    clearErrors();
+    throw new Error("Test error handling"); // --- IGNORE ---
+    mainInterface();
+} catch (err) {
+    showErrors(err.errors);
+}
