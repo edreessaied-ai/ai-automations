@@ -13,6 +13,12 @@ form.addEventListener("submit", (e) => {
   showPageState("loading-state");
   clearErrors();
 
+  const params = new URLSearchParams(window.location.search);
+  const editToken = params.get("editToken");
+
+  if (editToken) {
+    document.querySelector("#editToken").value = editToken;
+  }
   const formData = new FormData(form);
   const payload = Object.fromEntries(formData.entries());
 
