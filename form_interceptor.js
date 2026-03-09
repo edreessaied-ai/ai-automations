@@ -27,7 +27,6 @@ form.addEventListener("submit", (e) => {
   try {
     validateTicketDraftData([payload]);
   } catch (err) {
-    showErrors(err.errors);
     e.preventDefault();
     showPageState("state-error"); 
   }
