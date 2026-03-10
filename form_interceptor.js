@@ -27,6 +27,8 @@ form.addEventListener("submit", (e) => {
   try {
     validateTicketDraftData([payload]);
   } catch (err) {
+    console.error("Form validation failed: ", err);
+    showErrors(err);
     e.preventDefault();
     showPageState("state-error"); 
   }

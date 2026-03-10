@@ -160,6 +160,14 @@ export function clearErrors() {
 
 
 export function showErrors(errors) {
+  if (!errors) return;
+
+  // Normalize input so we always work with an array
+  if (!Array.isArray(errors)) {
+    console.error("Non-validation error:", errors);
+    return;
+  }
+
   const friendlyMessages = {
     minLength: "This field cannot be empty.",
     format: "Please enter a valid email address.",
@@ -167,15 +175,28 @@ export function showErrors(errors) {
     required: "This field is required."
   };
 
-  errors.forEach(err => {
-    let field = err.instancePath.replace("/", "");
+  const shownFields = new Set();
 
-    // Handle required errors (instancePath is empty)
-    if (err.keyword === "required") {
+  errors.forEach(err => {
+    if (!err) return;
+
+    let field = "";
+
+    if (typeof err.instancePath === "string") {
+      field = err.instancePath.split("/").pop();
+    }
+
+    if (err.keyword === "required" && err.params?.missingProperty) {
       field = err.params.missingProperty;
     }
 
-    const message = friendlyMessages[err.keyword] || err.message;
+    if (!field || shownFields.has(field)) return;
+    shownFields.add(field);
+
+    const message =
+      friendlyMessages[err.keyword] ||
+      err.message ||
+      "Invalid input.";
 
     const input = document.querySelector(`[name="${field}"]`);
     const errorEl = document.querySelector(`[data-error-for="${field}"]`);
