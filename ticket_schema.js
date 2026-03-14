@@ -47,6 +47,7 @@ export const schema = {
       createdAt: {},
       updatedAt: {},
       editToken: {},
+      emailMessageId: {},
     },
   }
 };
