@@ -106,6 +106,8 @@ export async function loadTicketDraftFormFromEditToken(editToken, options = {}) 
             document.getElementById("assignee").value = formResponse.assignee || "";
             document.getElementById("userEmail").value = formResponse.userEmail || "";
             document.getElementById("aiTicketDrafterEnabled").value = formResponse.aiTicketDrafterEnabled || "";
+            document.getElementById("editToken").value = editToken;
+            document.getElementById("emailMessageId").value = formResponse.emailMessageId || "";
 
             showPageState("form-state");
             break; // Exit loop on success
