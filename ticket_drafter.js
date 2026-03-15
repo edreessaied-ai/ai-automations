@@ -9,7 +9,7 @@ import {
     hideAllStates,
     loadTicketDraftFormFromEditToken,
     showPageState,
-} from "./ticket_drafter_utilities.js";
+} from "./ticket_drafter_util.js";
 
 
 // Fetch params in the URL

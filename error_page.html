@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+<title>Something Went Wrong</title>
+
+<style>
+
+/* ===== Page Base ===== */
+
+body {
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  max-width: 600px;
+  margin: 80px auto;
+  padding: 0 20px;
+  background-color: #f6f1e7;
+}
+
+section {
+  margin-bottom: 40px;
+  background-color: #fffaf2;
+  border-radius: 16px;
+  padding: 44px 40px 48px;
+  box-shadow: 0 12px 28px rgba(0,0,0,0.08);
+  border-top: 6px solid #b91c1c;
+  text-align: center;
+}
+
+h1 {
+  color: #3a2f1c;
+  font-size: 42px;
+  margin-bottom: 20px;
+}
+
+p {
+  font-size: 20px;
+  line-height: 1.7;
+  margin-bottom: 32px;
+  color: #5a4a32;
+}
+
+/* ===== Buttons ===== */
+
+.btn {
+  display: inline-block;
+  margin-top: 20px;
+  padding: 16px 32px;
+  font-size: 18px;
+  border-radius: 12px;
+  border: none;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background-color 0.2s ease, transform 0.1s ease;
+}
+
+.btn:hover {
+  transform: translateY(-1px);
+}
+
+.btn.navy {
+  background-color: #0a2540;
+  color: #fff;
+}
+
+.btn.navy:hover {
+  background-color: #081e33;
+}
+
+.error-icon {
+  font-size: 64px;
+  margin-bottom: 16px;
+}
+
+</style>
+
+<link rel="icon" href="/form.png" type="image/png">
+
+</head>
+
+<body>
+
+<section>
+
+<div class="error-icon">⚠️</div>
+
+<h1>Something Went Wrong</h1>
+
+<p>
+We couldn't process your request.<br>
+This may be due to an invalid link or a temporary issue.
+</p>
+
+<p>
+Please try returning to the main form and submitting again.
+</p>
+
+<a href="/" class="btn navy">Return to Form</a>
+
+</section>
+
+</body>
+</html>
