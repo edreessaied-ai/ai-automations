@@ -6,19 +6,20 @@
 import {
     validateTicketDraftData,
     TicketDraftSchemaValidationError,
+    type TicketDraftData,
 } from "./ticket_schema.js"
 
 // Custom error classes for better error handling and debugging
 
 export class TicketDraftError extends Error {
-  constructor(message) {
+  constructor(message: string) {
     super(message);
     this.name = "TicketDraftError";
   }
 }
 
 export class TicketDraftDataFetchError extends TicketDraftError {
-  constructor(message) {
+  constructor(message: string) {
     super(message);
     this.name = "TicketDraftDataFetchError";
   }
@@ -33,8 +34,8 @@ export const FORM_SUBMISSION_WEBHOOK_TO_BACKEND = "https://edreessaied.app.n8n.c
 
 // ===== UI Utility functions =====
 
-export function hideAllStates() {
-    /* 
+export function hideAllStates(): void {
+    /*
         Power to hide all sections on the page,
         used before showing a specific section
     */
@@ -43,7 +44,7 @@ export function hideAllStates() {
 }
 
 
-export function showPageState(element_id) {
+export function showPageState(element_id: string): void {
     /*
         Show a specific section by ID and hide all others
     */
@@ -53,82 +54,72 @@ export function showPageState(element_id) {
         element.classList.remove("hidden");
     }
 
-    if (element === "form-state") {
+    if (element_id === "form-state") {
         initializeFormUI();
     }
 }
 
-export async function loadTicketDraftFormFromEditToken(editToken, options = {}) {
+export function setFormFieldValue(elementId: string, elementValue: string) {
+  const formElement = document.getElementById(elementId) as HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement | null;
+  if (formElement) {
+    formElement.value = elementValue;
+  }
+}
+
+export async function loadTicketDraftFormFromEditToken(editToken: string): Promise<void> {
     /*
         Load existing ticket draft data from server using the edit token,
         and populate the form fields for editing.
-        
-        Implements a retry mechanism to handle potential delays in
-        data availability after form submission.
     */
-
-    const {
-        retries = 10,
-        retryDelayMs = 1000,
-    } = options;
-
     const webhookUrl = `${FORM_SUBMISSION_WEBHOOK_TO_BACKEND}?editToken=${encodeURIComponent(editToken)}`;
-
-    for (let attempt = 1; attempt <= retries; attempt++) {
-        try {
-            const webhookResponse = await fetch(webhookUrl);
-
-            if (!webhookResponse.ok) {
-                throw new TicketDraftDataFetchError(
-                    `Backend request failed: ${webhookResponse.status}`
-                );
-            }
-            // Load the response text and check if it's empty before parsing
-            const responseText = await webhookResponse.text();
-            if (!responseText) {
-                throw new TicketDraftDataFetchError(
-                    `Backend returned an empty response, data might not be available`
-                );
-            }
-
-            // Parse and validate the response data
-            const webhookData = JSON.parse(responseText);
-            // Validate data response of N8N workflow
-            validateTicketDraftData(webhookData);
-
-            // Populate fields
-            const formResponse = webhookData[0];
-            document.getElementById("ticketTitle").value = formResponse.ticketTitle || "";
-            document.getElementById("ticketDescription").value = formResponse.ticketDescription || "";
-            document.getElementById("ticketType").value = formResponse.ticketType || "";
-            document.getElementById("ticketImpact").value = formResponse.ticketImpact || "";
-            document.getElementById("assigneeTeam").value = formResponse.assigneeTeam || "";
-            document.getElementById("assignee").value = formResponse.assignee || "";
-            document.getElementById("userEmail").value = formResponse.userEmail || "";
-            document.getElementById("aiTicketDrafterEnabled").value = formResponse.aiTicketDrafterEnabled || "";
-            document.getElementById("editToken").value = editToken;
-            document.getElementById("emailMessageId").value = formResponse.emailMessageId || "";
-
-            showPageState("form-state");
-            break; // Exit loop on success
-        } catch (err) {
-            if (attempt === retries) {
-                throw new TicketDraftError("Failed to load ticket draft data from server.");
-            }
-            console.error("Failed to load ticket draft data; retrying... ", err);
-            await new Promise(resolve => setTimeout(resolve, retryDelayMs));
+    try {
+        const webhookResponse = await fetch(webhookUrl);
+        // Check if the response was successful
+        if (!webhookResponse.ok) {
+            throw new TicketDraftDataFetchError(
+                `Backend request failed: ${webhookResponse.status}`
+            );
         }
+        // Load the response text and check if it's empty before parsing
+        const responseText = await webhookResponse.text();
+        if (!responseText) {
+            throw new TicketDraftDataFetchError(
+                `Backend returned an empty response, data might not be available`
+            );
+        }
+
+        // Parse and validate the response data
+        const webhookData: TicketDraftData[] = JSON.parse(responseText);
+        validateTicketDraftData(webhookData);
+
+        // Populate form fields
+        const formResponse = webhookData[0];
+        setFormFieldValue("ticketTitle", formResponse.ticketTitle || "");
+        setFormFieldValue("ticketDescription", formResponse.ticketDescription || "");
+        setFormFieldValue("ticketType", formResponse.ticketType || "");
+        setFormFieldValue("ticketImpact", formResponse.ticketImpact || "");
+        setFormFieldValue("assigneeTeam", formResponse.assigneeTeam || "");
+        setFormFieldValue("assignee", formResponse.assignee || "");
+        setFormFieldValue("userEmail", formResponse.userEmail || "");
+        setFormFieldValue("aiTicketDrafterEnabled", formResponse.aiTicketDrafterEnabled || "");
+        setFormFieldValue("editToken", editToken);
+        setFormFieldValue("emailMessageId", formResponse.emailMessageId || "");
+        // Show the form, populated with all pre-filled fields and ready for editing
+        showPageState("form-state");
+    } catch (err) {
+        console.error(`Failed to load ticket draft data, error: ${err}`);
+        throw err;
     }
 }
 
-export function initializeFormUI() {
-    /* 
+export function initializeFormUI(): void {
+    /*
         Fullscreen ticket description box handler
     */
-    const textarea = document.getElementById("ticketDescription");
+    const textarea = document.getElementById("ticketDescription") as HTMLTextAreaElement;
     if (!textarea) return;
 
-    let anchor = null;
+    let anchor: { width: string; height: string } | null = null;
 
     textarea.addEventListener("dblclick", () => {
         const isFullscreen = textarea.classList.contains("fullscreen-textarea");
@@ -144,8 +135,10 @@ export function initializeFormUI() {
             textarea.classList.add("fullscreen-textarea");
         } else {
             textarea.classList.remove("fullscreen-textarea");
-            textarea.style.width = anchor.width;
-            textarea.style.height = anchor.height;
+            if (anchor) {
+                textarea.style.width = anchor.width;
+                textarea.style.height = anchor.height;
+            }
         }
 
         textarea.focus();
@@ -154,14 +147,14 @@ export function initializeFormUI() {
 
 // Error handling and display functions for form validation
 
-export function clearErrors() {
+export function clearErrors(): void {
   document.querySelectorAll(".error").forEach(el => el.textContent = "");
   document.querySelectorAll("input, select, textarea")
     .forEach(el => el.classList.remove("input-error"));
 }
 
 
-export function showErrors(errors) {
+export function showErrors(errors: any[]): void {
   if (!errors) return;
 
   // Normalize input so we always work with an array
@@ -170,14 +163,14 @@ export function showErrors(errors) {
     return;
   }
 
-  const friendlyMessages = {
+  const friendlyMessages: Record<string, string> = {
     minLength: "This field cannot be empty.",
     format: "Please enter a valid email address.",
     enum: "Please select a valid option.",
     required: "This field is required."
   };
 
-  const shownFields = new Set();
+  const shownFields = new Set<string>();
 
   errors.forEach(err => {
     if (!err) return;
@@ -185,7 +178,7 @@ export function showErrors(errors) {
     let field = "";
 
     if (typeof err.instancePath === "string") {
-      field = err.instancePath.split("/").pop();
+      field = err.instancePath.split("/").pop() || "";
     }
 
     if (err.keyword === "required" && err.params?.missingProperty) {
@@ -200,8 +193,8 @@ export function showErrors(errors) {
       err.message ||
       "Invalid input.";
 
-    const input = document.querySelector(`[name="${field}"]`);
-    const errorEl = document.querySelector(`[data-error-for="${field}"]`);
+    const input = document.querySelector(`[name="${field}"]`) as HTMLElement;
+    const errorEl = document.querySelector(`[data-error-for="${field}"]`) as HTMLElement;
 
     if (input) input.classList.add("input-error");
     if (errorEl) errorEl.textContent = message;

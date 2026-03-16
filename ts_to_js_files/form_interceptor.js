@@ -1,0 +1,33 @@
+/*
+    Intercept form submission and validate the schema.
+    If invalid -> show errors and prevent form submission.
+    If valid -> allow form submission to proceed as normal.
+ */
+import { validateTicketDraftData } from "./ticket_schema.js";
+import { showPageState, clearErrors, showErrors } from "./ticket_drafter_util.js";
+const form = document.querySelector("form");
+form.addEventListener("submit", (e) => {
+    showPageState("loading-state");
+    clearErrors();
+    const params = new URLSearchParams(window.location.search);
+    const editToken = params.get("editToken");
+    if (editToken) {
+        const editTokenEl = document.querySelector("#editToken");
+        if (editTokenEl)
+            editTokenEl.value = editToken;
+    }
+    const formData = new FormData(form);
+    const payload = Object.fromEntries(formData.entries());
+    // Validate against AJV schema and show errors if invalid.
+    // If valid, allow form submission to proceed as normal.
+    try {
+        validateTicketDraftData([payload]);
+    }
+    catch (err) {
+        console.error("Form validation failed: ", err);
+        showErrors(err.errors || [err]);
+        e.preventDefault();
+        showPageState("state-error");
+    }
+});
+//# sourceMappingURL=form_interceptor.js.map

@@ -7,9 +7,9 @@
 import { validateTicketDraftData } from "./ticket_schema.js";
 import { showPageState, clearErrors, showErrors } from "./ticket_drafter_util.js";
 
-const form = document.querySelector("form");
+const form = document.querySelector("form") as HTMLFormElement;
 
-form.addEventListener("submit", (e) => {
+form.addEventListener("submit", (e: Event) => {
   showPageState("loading-state");
   clearErrors();
 
@@ -17,19 +17,20 @@ form.addEventListener("submit", (e) => {
   const editToken = params.get("editToken");
 
   if (editToken) {
-    document.querySelector("#editToken").value = editToken;
+    const editTokenEl = document.querySelector("#editToken") as HTMLInputElement;
+    if (editTokenEl) editTokenEl.value = editToken;
   }
   const formData = new FormData(form);
-  const payload = Object.fromEntries(formData.entries());
+  const payload: Record<string, string> = Object.fromEntries(formData.entries()) as any;
 
   // Validate against AJV schema and show errors if invalid.
   // If valid, allow form submission to proceed as normal.
   try {
-    validateTicketDraftData([payload]);
+    validateTicketDraftData([payload as any]);
   } catch (err) {
     console.error("Form validation failed: ", err);
-    showErrors(err);
+    showErrors((err as any).errors || [err]);
     e.preventDefault();
-    showPageState("state-error"); 
+    showPageState("state-error");
   }
 });
