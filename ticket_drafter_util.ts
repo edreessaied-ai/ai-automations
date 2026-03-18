@@ -25,6 +25,19 @@ export class TicketDraftDataFetchError extends TicketDraftError {
   }
 }
 
+export class TicketDraftSubmissionError extends TicketDraftError {
+  constructor(message: string) {
+    super(message);
+    this.name = "TicketDraftSubmissionError";
+  }
+}
+
+export class MissingDataError extends TicketDraftError {
+  constructor(message: string) {
+    super(message);
+    this.name = "MissingDataError";
+  }
+}
 
 // URLs to send or fetch ticket draft data
 export const FRONTEND_FORM_LINK = "https://dev.aiautomations.engineering/";

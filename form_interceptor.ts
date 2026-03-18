@@ -4,8 +4,16 @@
     If valid -> allow form submission to proceed as normal.
  */
 
-import { validateTicketDraftData } from "./ticket_schema.js";
-import { showPageState, clearErrors, showErrors } from "./ticket_drafter_util.js";
+import { retry_wrapper } from "./retry_util.js";
+import { TicketDraftData, validateTicketDraftData } from "./ticket_schema.js";
+import {
+  FRONTEND_FORM_LINK,
+  MissingDataError,
+  TicketDraftSubmissionError,
+  showPageState,
+  clearErrors,
+  showErrors 
+} from "./ticket_drafter_util.js";
 
 const form = document.querySelector("form") as HTMLFormElement;
 
@@ -18,45 +26,61 @@ form.addEventListener("submit", async (e: Event) => {
   showPageState("loading-state");
   clearErrors();
 
+  // Get the edit token from the URL if it exists
+  const params = new URLSearchParams(window.location.search);
+
+  // If there's an edit token, set it in the form so the backend knows this is an edit request
+  let editToken: string | undefined = params.get("editToken") ?? undefined;
+  if (editToken) {
+    const editTokenEl = document.querySelector("#editToken") as HTMLInputElement;
+    if (editTokenEl) editTokenEl.value = editToken;
+  }
+
+  const formData = new FormData(form);
+  const payload: Record<string, string> =
+    Object.fromEntries(formData.entries()) as any;
+
+  // Frontend validation
+  validateTicketDraftData([payload as any]);
+
+  // Submit the form data to the backend and handle errors
   try {
-    const params = new URLSearchParams(window.location.search);
-    const editToken = params.get("editToken");
+    async function submitForm(): Promise<string> {
+      const response = await fetch(form.action, {
+        method: form.method,
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
 
-    if (editToken) {
-      const editTokenEl = document.querySelector("#editToken") as HTMLInputElement;
-      if (editTokenEl) editTokenEl.value = editToken;
+      if (!response.ok) {
+        throw new TicketDraftSubmissionError(
+          `Form submission failed with status ${response.status}: ${response.statusText}`
+        );
+      }
+
+      // Extract edit token from the response
+      const rawResponseData = await response.text();
+      const formResponseArray: TicketDraftData[] = JSON.parse(rawResponseData);
+      let formResponseData: TicketDraftData = formResponseArray[0];
+      if (!formResponseData?.editToken) {
+        throw new MissingDataError("Missing editToken in response");
+      }
+      return formResponseData.editToken;
     }
-
-    const formData = new FormData(form);
-    const payload: Record<string, string> =
-      Object.fromEntries(formData.entries()) as any;
-
-    // Frontend validation
-    validateTicketDraftData([payload as any]);
-
-    // Submit to backend
-    const response = await fetch(form.action, {
-      method: form.method || "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(payload),
-    });
-
-    if (!response.ok) {
-      const errorBody = await response.json().catch(() => null);
-      throw new Error(errorBody?.message || "Server error");
-    }
-
-    const result = await response.json();
-
-    // Handle success state
-    console.log("Submission success:", result);
-    showPageState("state-success");
-
+    editToken = await retry_wrapper(() => submitForm(), { retries: 10 });
   } catch (err: any) {
     console.error("Form submission failed:", err);
     showErrors(err);
     showPageState("state-error");
   }
+
+  // If submission is successful, redirect to the submitted page with the edit token
+  const redirectToSubmittedPageURL = new URL(FRONTEND_FORM_LINK);
+  redirectToSubmittedPageURL.searchParams.set("state", "submitted");
+  if (editToken) {
+    redirectToSubmittedPageURL.searchParams.set("editToken", editToken);
+  }
+  window.location.href = redirectToSubmittedPageURL.toString();
 });
