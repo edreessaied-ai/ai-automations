@@ -48,17 +48,18 @@ form.addEventListener("submit", async (e) => {
             return formResponseData.editToken;
         }
         editToken = await retry_wrapper(() => submitForm(), { retries: 60 });
-    }
-    catch (err) {
+    
+        // If submission is successful, redirect to the submitted page with the edit token
+        const redirectToSubmittedPageURL = new URL(FRONTEND_FORM_LINK);
+        redirectToSubmittedPageURL.searchParams.set("state", "submitted");
+        if (editToken) {
+            redirectToSubmittedPageURL.searchParams.set("editToken", editToken);
+        }
+        window.location.href = redirectToSubmittedPageURL.toString();
+    } catch (err) {
         console.error("Form submission failed:", err);
         showPageState("state-error");
+        return;
     }
-    // If submission is successful, redirect to the submitted page with the edit token
-    const redirectToSubmittedPageURL = new URL(FRONTEND_FORM_LINK);
-    redirectToSubmittedPageURL.searchParams.set("state", "submitted");
-    if (editToken) {
-        redirectToSubmittedPageURL.searchParams.set("editToken", editToken);
-    }
-    window.location.href = redirectToSubmittedPageURL.toString();
 });
 //# sourceMappingURL=form_interceptor.js.map
