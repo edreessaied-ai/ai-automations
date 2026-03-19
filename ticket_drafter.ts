@@ -41,48 +41,49 @@ async function mainInterface(): Promise<void> {
     // If it's "submitted", show the submitted state.
     // If it's "edit", load the draft for editing.
     // Otherwise, show an error.
-    if (!pageState || pageState === "form") {
-        // New form
-        // New form is the default state for now
-        // at least until we implement a default landing page or other states.
-        showPageState("form-state");
-    } else if (pageState === "submitted") {
-        // Submitted state - show the submitted page with the edit link if edit token is present
+    try {
+        if (!pageState || pageState === "form") {
+            // New form
+            // New form is the default state for now
+            // at least until we implement a default landing page or other states.
+            showPageState("form-state");
+        } else if (pageState === "submitted") {
+            // Submitted state - show the submitted page with the edit link if edit token is present
 
-        // Link the new form button to the fresh form page
-        const newFormEl = document.getElementById("new-form") as HTMLAnchorElement;
-        if (newFormEl) newFormEl.href = FRONTEND_FORM_LINK;
+            // Link the new form button to the fresh form page
+            const newFormEl = document.getElementById("new-form") as HTMLAnchorElement;
+            if (newFormEl) newFormEl.href = FRONTEND_FORM_LINK;
 
-        // If there's an edit token, set the edit button href to include the edit token, otherwise disable the edit link
-        const editButtonElement = document.getElementById("edit-form") as HTMLAnchorElement;
-        if (editButtonElement) {
-            if (editToken) {
-                editButtonElement.href =
-                    `${FRONTEND_FORM_LINK}?state=edit&editToken=${encodeURIComponent(editToken)}`;
-            } else {
-                editButtonElement.classList.add("disabled");
-                editButtonElement.removeAttribute("href");
-                editButtonElement.title = "You cannot edit this form right now";
+            // If there's an edit token, set the edit button href to include the edit token, otherwise disable the edit link
+            const editButtonElement = document.getElementById("edit-form") as HTMLAnchorElement;
+            if (editButtonElement) {
+                if (editToken) {
+                    editButtonElement.href =
+                        `${FRONTEND_FORM_LINK}?state=edit&editToken=${encodeURIComponent(editToken)}`;
+                } else {
+                    editButtonElement.classList.add("disabled");
+                    editButtonElement.removeAttribute("href");
+                    editButtonElement.title = "You cannot edit this form right now";
+                }
             }
-        }
 
-        // Show the submission acknowledgment page
-        showPageState("state-submitted");
-    } else if (pageState === "edit") {
-        // Show a temporary loading message
-        showPageState("loading-state");
+            // Show the submission acknowledgment page
+            showPageState("state-submitted");
+        } else if (pageState === "edit") {
+            // Show a temporary loading message
+            showPageState("loading-state");
 
-        // Fetch the existing ticket draft data using
-        // the edit token and populate the form for editing.
-        // If loading fails, show an error state.
-        try {
-            await retry_wrapper(() => loadTicketDraftFormFromEditToken(editToken!), { retries: 10 });
-        } catch (err) {
-            showPageState("state-error");
+            // Fetch the existing ticket draft data using
+            // the edit token and populate the form for editing.
+            // If loading fails, show an error state.
+            await retry_wrapper(() => loadTicketDraftFormFromEditToken(editToken!), { retries: 30 });
+        } else {
+            // Invalid state
+            showPageState("unknown-state");
         }
-    } else {
-        // Invalid state
-        showPageState("unknown-state");
+    } catch (err) {
+        console.error("Error in main interface flow: ", err);
+        showPageState("state-error");
     }
 }
 
