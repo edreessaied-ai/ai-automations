@@ -69,10 +69,9 @@ form.addEventListener("submit", async (e: Event) => {
       }
       return formResponseData.editToken;
     }
-    editToken = await retry_wrapper(() => submitForm(), { retries: 10 });
+    editToken = await retry_wrapper(() => submitForm(), { retries: 60 });
   } catch (err: any) {
     console.error("Form submission failed:", err);
-    showErrors(err);
     showPageState("state-error");
   }
 
