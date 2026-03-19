@@ -62,6 +62,7 @@ async function mainInterface(): Promise<void> {
             } else {
                 editButtonElement.classList.add("disabled");
                 editButtonElement.removeAttribute("href");
+                editButtonElement.title = "You cannot edit this form right now";
             }
         }
 
