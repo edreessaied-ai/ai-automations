@@ -18,6 +18,7 @@ import {
 const form = document.querySelector("form") as HTMLFormElement;
 
 form.addEventListener("submit", async (e: Event) => {
+  console.log("🔥 submit intercepted!");
     // Prevent default form submission behavior to allow for validation and custom handling
     // If validation succeeds, we will manually submit the form after validation. If it fails, we will show errors and not submit.
     // This is done to provide a better user experience by not submitting the form until we are sure the data is valid.
