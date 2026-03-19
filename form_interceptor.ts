@@ -18,10 +18,9 @@ import {
 const form = document.querySelector("form") as HTMLFormElement;
 
 form.addEventListener("submit", async (e: Event) => {
-  console.log("🔥 submit intercepted!");
-    // Prevent default form submission behavior to allow for validation and custom handling
-    // If validation succeeds, we will manually submit the form after validation. If it fails, we will show errors and not submit.
-    // This is done to provide a better user experience by not submitting the form until we are sure the data is valid.
+  // Prevent default form submission behavior to allow for validation and custom handling
+  // If validation succeeds, we will manually submit the form after validation. If it fails, we will show errors and not submit.
+  // This is done to provide a better user experience by not submitting the form until we are sure the data is valid.
   e.preventDefault();
 
   showPageState("loading-state");
@@ -55,6 +54,8 @@ form.addEventListener("submit", async (e: Event) => {
         body: JSON.stringify(payload),
       });
 
+      console.log("Response:", response);
+
       if (!response.ok) {
         throw new TicketDraftSubmissionError(
           `Form submission failed with status ${response.status}: ${response.statusText}`
@@ -63,8 +64,11 @@ form.addEventListener("submit", async (e: Event) => {
 
       // Extract edit token from the response
       const rawResponseData = await response.text();
+      console.log("Response data:", rawResponseData);
       const formResponseArray: TicketDraftData[] = JSON.parse(rawResponseData);
+      console.log("Form response array:", formResponseArray);
       let formResponseData: TicketDraftData = formResponseArray[0];
+      console.log("Form response data:", formResponseData);
       if (!formResponseData?.editToken) {
         throw new MissingDataError("Missing editToken in response");
       }
