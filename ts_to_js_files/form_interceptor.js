@@ -47,7 +47,7 @@ form.addEventListener("submit", async (e) => {
             }
             return formResponseData.editToken;
         }
-        editToken = await retry_wrapper(() => submitForm(), { retries: 60 });
+        editToken = await retry_wrapper(() => submitForm(), { retries: 30 });
         // If submission is successful, redirect to the submitted page with the edit token
         const redirectToSubmittedPageURL = new URL(FRONTEND_FORM_LINK);
         redirectToSubmittedPageURL.searchParams.set("state", "submitted");
