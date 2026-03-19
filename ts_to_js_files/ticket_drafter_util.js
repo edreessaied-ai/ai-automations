@@ -16,6 +16,18 @@ export class TicketDraftDataFetchError extends TicketDraftError {
         this.name = "TicketDraftDataFetchError";
     }
 }
+export class TicketDraftSubmissionError extends TicketDraftError {
+    constructor(message) {
+        super(message);
+        this.name = "TicketDraftSubmissionError";
+    }
+}
+export class MissingDataError extends TicketDraftError {
+    constructor(message) {
+        super(message);
+        this.name = "MissingDataError";
+    }
+}
 // URLs to send or fetch ticket draft data
 export const FRONTEND_FORM_LINK = "https://dev.aiautomations.engineering/";
 export const FORM_SUBMISSION_WEBHOOK_TO_BACKEND = "https://edreessaied.app.n8n.cloud/webhook/form-submission";

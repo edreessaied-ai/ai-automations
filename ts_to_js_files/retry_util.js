@@ -18,6 +18,8 @@ export async function retry_wrapper(function_to_execute, options = {}) {
             attempt++;
         }
     }
-    throw new Error("Retry failed"); // This should never be reached
+    // Terminate with an exception, though this should never be reached,
+    // since we will either return the function or throw an error in the loop
+    throw new Error("Retry failed: reached maximum number of retries.");
 }
 //# sourceMappingURL=retry_util.js.map
