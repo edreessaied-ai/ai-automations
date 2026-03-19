@@ -45,37 +45,36 @@ form.addEventListener("submit", async (e: Event) => {
 
   // Submit the form data to the backend and handle errors
   try {
-    async function submitForm(): Promise<string> {
+    async function submitForm() {
       const response = await fetch(form.action, {
         method: form.method,
         headers: {
-          "Content-Type": "application/json",
+            "Content-Type": "application/json",
         },
         body: JSON.stringify(payload),
       });
       if (!response.ok) {
-        throw new TicketDraftSubmissionError(
-          `Form submission failed with status ${response.status}: ${response.statusText}`
-        );
+          throw new TicketDraftSubmissionError(`Form submission failed with status ${response.status}: ${response.statusText}`);
       }
       // Extract edit token from the response
-      let formResponseData: TicketDraftData =  await response.json();
+      let formResponseData = await response.json();
       if (!formResponseData?.editToken) {
-        throw new MissingDataError("Missing editToken in response");
+          throw new MissingDataError("Missing editToken in response");
       }
       return formResponseData.editToken;
     }
-    editToken = await retry_wrapper(() => submitForm(), { retries: 30 });
-  } catch (err: any) {
+    editToken = await retry_wrapper(() => submitForm(), { retries: 60 });
+
+    // If submission is successful, redirect to the submitted page with the edit token
+    const redirectToSubmittedPageURL = new URL(FRONTEND_FORM_LINK);
+    redirectToSubmittedPageURL.searchParams.set("state", "submitted");
+    if (editToken) {
+      redirectToSubmittedPageURL.searchParams.set("editToken", editToken);
+    }
+    window.location.href = redirectToSubmittedPageURL.toString();
+  } catch (err) {
     console.error("Form submission failed:", err);
     showPageState("state-error");
+    return;
   }
-
-  // If submission is successful, redirect to the submitted page with the edit token
-  const redirectToSubmittedPageURL = new URL(FRONTEND_FORM_LINK);
-  redirectToSubmittedPageURL.searchParams.set("state", "submitted");
-  if (editToken) {
-    redirectToSubmittedPageURL.searchParams.set("editToken", editToken);
-  }
-  window.location.href = redirectToSubmittedPageURL.toString();
 });
