@@ -49,6 +49,7 @@ async function mainInterface() {
             else {
                 editButtonElement.classList.add("disabled");
                 editButtonElement.removeAttribute("href");
+                editButtonElement.title = "You cannot edit this form right now";
             }
         }
         // Show the submission acknowledgment page

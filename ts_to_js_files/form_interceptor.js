@@ -37,17 +37,11 @@ form.addEventListener("submit", async (e) => {
                 },
                 body: JSON.stringify(payload),
             });
-            console.log("Response:", response);
             if (!response.ok) {
                 throw new TicketDraftSubmissionError(`Form submission failed with status ${response.status}: ${response.statusText}`);
             }
             // Extract edit token from the response
-            const rawResponseData = await response.text();
-            console.log("Response data:", rawResponseData);
-            const formResponseArray = JSON.parse(rawResponseData);
-            console.log("Form response array:", formResponseArray);
-            let formResponseData = formResponseArray[0];
-            console.log("Form response data:", formResponseData);
+            let formResponseData = await response.json();
             if (!formResponseData?.editToken) {
                 throw new MissingDataError("Missing editToken in response");
             }
