@@ -4,7 +4,7 @@
     "module": "ES2020",
     "moduleResolution": "node",
     "outDir": "./ts_to_js_files",
-    "rootDir": "./",
+    "rootDir": "./ticket_drafting_mods/",
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
@@ -15,7 +15,7 @@
     "sourceMap": true
   },
   "include": [
-    "*.ts"
+    "./ticket_drafting_mods/*.ts"
   ],
   "exclude": [
     "node_modules",

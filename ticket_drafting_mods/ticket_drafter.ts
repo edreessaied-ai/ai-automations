@@ -13,15 +13,7 @@ import {
 import { retry_wrapper } from "./retry_util.js";
 
 
-// Fetch params in the URL
-const PAGE_PARAMS = new URLSearchParams(window.location.search);
-// Determine which page state to show based on the "state" URL param
-const PAGE_STATE = PAGE_PARAMS.get("state");
-// Parse the edit token if present
-const EDIT_TOKEN = PAGE_PARAMS.get("editToken");
-
-
-async function mainInterface(): Promise<void> {
+async function mainTicketDrafterInterface(): Promise<void> {
     /*
         Core page manager
         Determines which section to show based on URL params and manages the flow of the application.
@@ -90,7 +82,7 @@ async function mainInterface(): Promise<void> {
 
 try {
     clearErrors();
-    mainInterface();
+    mainTicketDrafterInterface();
 } catch (err) {
     console.error("Error initializing the page: ", err);
     showPageState("state-error");
