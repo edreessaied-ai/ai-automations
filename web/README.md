@@ -23,4 +23,4 @@ npm run build
 npm run watch
 ```
 
-The compiled JavaScript files are in the `ts_to_js_files/` directory.
+The compiled JavaScript files are in the `dist/` directory.
