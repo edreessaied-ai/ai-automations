@@ -3,9 +3,11 @@
 """
 
 import json
+import os
 from openai import OpenAI
 
-client = OpenAI()
+
+client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 SYSTEM_PROMPT = """
 You are an AI front desk assistant.
