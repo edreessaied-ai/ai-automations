@@ -33,7 +33,7 @@ Response format:
 """
 
 
-async def run_agent(message: str, history=None):
+async def run_agent(message: str):
     """
     Run the front desk agent with the given message and history.
     """
