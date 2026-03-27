@@ -65,4 +65,12 @@ if [ -n "${BASH:-}" -o -n "${ZSH_VERSION:-}" ] ; then
     hash -r 2> /dev/null
 fi
 
+# Load environment variables from .env file
+ENV_FILE="$VIRTUAL_ENV/../.env"
+if [ -f "$ENV_FILE" ]; then
+    set -a
+    source "$ENV_FILE"
+    set +a
+fi
+
 echo "AI agent environment activated ✅"
