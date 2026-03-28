@@ -43,26 +43,41 @@ If the input already contains structure (e.g., Title:, Description:), use it.
 Otherwise, infer structure from the input.
 """
 
+TICKET_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "title": {"type": "string"},
+        "description": {"type": "string"},
+        "priority": {
+            "type": "string",
+            "enum": ["Low", "Medium", "High"]
+        },
+        "labels": {
+            "type": "array",
+            "items": {"type": "string"}
+        }
+    },
+    "required": ["title", "description", "priority", "labels"],
+    "additionalProperties": False
+}
 
-def _call_llm(user_prompt: str) -> Dict[str, Any]:
-    """
-    Internal helper to call the LLM and safely parse JSON output.
-    """
+
+def _call_llm(user_prompt: str) -> dict:
     response = client.responses.create(
         model="gpt-4.1-mini",
+        response_format={
+            "type": "json_schema",
+            "json_schema": {
+                "name": "ticket",
+                "schema": TICKET_SCHEMA
+            }
+        },
         input=[
             {"role": "system", "content": SYSTEM_PROMPT},
             {"role": "user", "content": user_prompt}
         ]
     )
-
-    text = response.output[0].content[0].text
-
-    try:
-        return json.loads(text)
-    except json.JSONDecodeError:
-        raise ValueError(f"Invalid JSON returned by model:\n{text}")
-
+    return json.loads(response.output[0].content[0].text)
 
 # =========================
 # Public Functions
