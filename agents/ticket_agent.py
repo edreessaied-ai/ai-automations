@@ -65,23 +65,25 @@ TICKET_SCHEMA = {
 def _call_llm(user_prompt: str) -> dict:
     response = client.responses.create(
         model="gpt-4.1-mini",
-        response_format={
-            "type": "json_schema",
-            "json_schema": {
-                "name": "ticket",
-                "schema": TICKET_SCHEMA
-            }
-        },
         input=[
             {"role": "system", "content": SYSTEM_PROMPT},
             {"role": "user", "content": user_prompt}
-        ]
+        ],
+        text={
+            "format": {
+                "type": "json_schema",
+                "name": "ticket",
+                "schema": TICKET_SCHEMA,
+                "strict": True
+            }
+        }
     )
     return json.loads(response.output[0].content[0].text)
 
 # =========================
 # Public Functions
 # =========================
+
 
 def generate_ticket(user_input: str) -> Dict[str, Any]:
     """
