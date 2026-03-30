@@ -35,7 +35,7 @@ Otherwise, infer structure from the input.
 """
 
 
-async def run_agent(message: str):
+async def run_agent(message: str) -> dict:
     """
     Run the front desk agent with the given message and history.
     """

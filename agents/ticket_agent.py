@@ -7,15 +7,18 @@ Core AI logic for:
 - Improving existing tickets
 - Editing tickets via natural language instructions
 """
-
 import json
 import os
+
 from typing import Dict, Any
-
 from openai import OpenAI
+from utilities.logger import get_hourly_logger
 
-api_key = os.getenv("OPENAI_API_KEY")
-client = OpenAI(api_key=api_key)
+ticket_agent_logger = get_hourly_logger("ticket_agent")
+
+
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+OPENAI_CLIENT = OpenAI(api_key=OPENAI_API_KEY)
 
 
 SYSTEM_PROMPT = """
@@ -63,7 +66,7 @@ TICKET_SCHEMA = {
 
 
 def _call_llm(user_prompt: str) -> dict:
-    response = client.responses.create(
+    response = OPENAI_CLIENT.responses.create(
         model="gpt-4.1-mini",
         input=[
             {"role": "system", "content": SYSTEM_PROMPT},
@@ -138,19 +141,25 @@ Return the fully updated ticket.
 # =========================
 
 if __name__ == "__main__":
-    # Example test cases
-
-    print("=== GENERATE ===")
-    ticket = generate_ticket("payments failing for EU users after deploy")
-    print(json.dumps(ticket, indent=2))
-
-    print("\n=== IMPROVE ===")
-    improved = improve_ticket(ticket)
-    print(json.dumps(improved, indent=2))
-
-    print("\n=== EDIT ===")
-    edited = edit_ticket(
-        improved,
+    ticket_agent_logger.info("Starting ticket agent tests...")
+    INPUT_CONTENT = "payments failing for EU users after deploy"
+    ticket_agent_logger.info("Input content: %s", INPUT_CONTENT)
+    # Generate ticket
+    ticket_agent_logger.info("Generating ticket with content...")
+    ticket = generate_ticket(INPUT_CONTENT)
+    ticket_agent_logger.info("Generated ticket content: ")
+    ticket_agent_logger.info(json.dumps(ticket, indent=2))
+    # Improve ticket
+    ticket_agent_logger.info("Improving ticket...")
+    improved_ticket_content = improve_ticket(ticket)
+    ticket_agent_logger.info("Improved ticket content: ")
+    ticket_agent_logger.info(json.dumps(improved_ticket_content, indent=2))
+    # Edit ticket
+    ticket_agent_logger.info("Editing ticket...")
+    edited_ticket_content = edit_ticket(
+        improved_ticket_content,
         "lower priority to medium and mention mobile users"
     )
-    print(json.dumps(edited, indent=2))
+    ticket_agent_logger.info("Edited ticket content: ")
+    ticket_agent_logger.info(json.dumps(edited_ticket_content, indent=2))
+    ticket_agent_logger.info("Tests complete.")

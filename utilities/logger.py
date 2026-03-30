@@ -1,0 +1,76 @@
+"""
+    Logger utility that writes to
+    ~/logs/<log_name>.log.<YYYY>-<MM>-<DD>.<HH>-00
+
+    Rotates automatically when the hour changes.
+"""
+import logging
+from pathlib import Path
+from datetime import datetime
+from typing import Dict
+
+
+# Cache of active loggers per timestamp
+timestamp_to_logger_cache: Dict[str, logging.Logger] = {}
+
+
+def _get_hour_timestamp() -> str:
+    """Returns timestamp rounded to the current hour."""
+    now = datetime.now()
+    return now.strftime("%Y-%m-%d.%H-00")
+
+
+def get_hourly_logger(
+    log_name: str,
+    level: int = logging.INFO,
+    write_to_console: bool = False,
+) -> logging.Logger:
+    """
+    Returns a logger that writes to:
+    ~/logs/<log_name>.log.<YYYY>-<MM>-<DD>.<HH>-00
+
+    Rotates automatically when the hour changes.
+    """
+
+    timestamp = _get_hour_timestamp()
+    logger_key = f"{log_name}_{timestamp}"
+
+    # Return cached logger if it exists
+    if logger_key in timestamp_to_logger_cache:
+        return timestamp_to_logger_cache[logger_key]
+
+    # Resolve ~/logs directory
+    log_dir = Path.home() / "logs"
+    log_dir.mkdir(parents=True, exist_ok=True)
+
+    # Log file path
+    log_file = log_dir / f"{log_name}.log.{timestamp}"
+
+    # Create logger
+    logger = logging.getLogger(log_name)
+    logger.setLevel(level)
+    logger.propagate = False  # Prevent duplicate logs
+
+    # Formatter
+    formatter = logging.Formatter(
+        fmt="%(asctime)s | %(levelname)s | %(name)s | %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S"
+    )
+
+    # File handler
+    file_handler = logging.FileHandler(log_file)
+    file_handler.setLevel(level)
+    file_handler.setFormatter(formatter)
+    logger.addHandler(file_handler)
+
+    # Console handler (optional)
+    if write_to_console:
+        console_handler = logging.StreamHandler()
+        console_handler.setLevel(level)
+        console_handler.setFormatter(formatter)
+        logger.addHandler(console_handler)
+
+    # Cache it
+    timestamp_to_logger_cache[logger_key] = logger
+
+    return logger
