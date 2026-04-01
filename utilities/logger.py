@@ -4,6 +4,7 @@
 
     Rotates automatically when the hour changes.
 """
+import json
 import logging
 from pathlib import Path
 from datetime import datetime
@@ -74,3 +75,8 @@ def get_hourly_logger(
     timestamp_to_logger_cache[logger_key] = logger
 
     return logger
+
+
+def pretty_print_json(data: dict) -> str:
+    """Utility to pretty print JSON data."""
+    return json.dumps(data, indent=4).encode('utf-8').decode('unicode_escape')

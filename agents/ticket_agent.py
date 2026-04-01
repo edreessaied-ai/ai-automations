@@ -12,7 +12,7 @@ import os
 
 from typing import Dict, Any
 from openai import OpenAI
-from utilities.logger import get_hourly_logger
+from utilities.logger import get_hourly_logger, pretty_print_json
 
 ticket_agent_logger = get_hourly_logger("ticket_agent")
 
@@ -81,7 +81,22 @@ def _call_llm(user_prompt: str) -> dict:
             }
         }
     )
-    return json.loads(response.output[0].content[0].text)
+
+    def _decode_escapes(obj_to_decode: str | dict | list) -> str | dict | list:
+        """
+        Recursively decodes escape sequences in strings within a nested
+        JSON-like structure.
+        """
+        if isinstance(obj_to_decode, str):
+            return obj_to_decode.replace("\\n", "\n")
+        elif isinstance(obj_to_decode, dict):
+            return {k: _decode_escapes(v) for k, v in obj_to_decode.items()}
+        elif isinstance(obj_to_decode, list):
+            return [_decode_escapes(v) for v in obj_to_decode]
+        return obj_to_decode
+
+    return _decode_escapes(json.loads(response.output[0].content[0].text))
+
 
 # =========================
 # Public Functions
@@ -110,7 +125,7 @@ Improve the following Jira ticket. Make it clearer, more structured, =
 and more complete, while preserving the original intent.
 
 Ticket:
-{json.dumps(current_ticket, indent=2)}
+{pretty_print_json(current_ticket)}
 """
     return _call_llm(prompt)
 
@@ -129,7 +144,7 @@ Instruction:
 {instruction}
 
 Current Ticket:
-{json.dumps(current_ticket, indent=2)}
+{pretty_print_json(current_ticket)}
 
 Return the fully updated ticket.
 """
@@ -148,12 +163,12 @@ if __name__ == "__main__":
     ticket_agent_logger.info("Generating ticket with content...")
     ticket = generate_ticket(INPUT_CONTENT)
     ticket_agent_logger.info("Generated ticket content: ")
-    ticket_agent_logger.info(json.dumps(ticket, indent=2))
+    ticket_agent_logger.info(pretty_print_json(ticket))
     # Improve ticket
     ticket_agent_logger.info("Improving ticket...")
     improved_ticket_content = improve_ticket(ticket)
     ticket_agent_logger.info("Improved ticket content: ")
-    ticket_agent_logger.info(json.dumps(improved_ticket_content, indent=2))
+    ticket_agent_logger.info(pretty_print_json(improved_ticket_content))
     # Edit ticket
     ticket_agent_logger.info("Editing ticket...")
     edited_ticket_content = edit_ticket(
@@ -161,5 +176,5 @@ if __name__ == "__main__":
         "lower priority to medium and mention mobile users"
     )
     ticket_agent_logger.info("Edited ticket content: ")
-    ticket_agent_logger.info(json.dumps(edited_ticket_content, indent=2))
+    ticket_agent_logger.info(pretty_print_json(edited_ticket_content))
     ticket_agent_logger.info("Tests complete.")
