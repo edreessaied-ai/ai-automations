@@ -2,56 +2,48 @@
     Ticket Utility Module
 """
 import json
+from typing import Literal, Optional
 
-from typing import List
-from pydantic import BaseModel, Field, ValidationError, field_validator
+from pydantic import BaseModel, ValidationError
+
+from utilities.type_util import ErrStr, JSONStr
 
 
 # --- Ticket Model ---
 
 class Ticket(BaseModel):
     """
-        Represents a structured Jira ticket
+        Uses pydantic model to represent a structured Jira ticket
+
+        Pydantic models are used here to provide a strict validation boundary
+        for untrusted input (e.g., AI-generated data).
+
+        They enforce schema correctness, perform type coercion,
+        and fail fast with clear errors when data is invalid.
+
+        This ensures only well-formed, reliable ticket data enters the system,
+        reducing bugs, simplifying parsing, and improving debuggability in
+        production pipelines.
     """
-    title: str = Field(
-        ...,
-        description="Short summary of the issue"
-    )
-    description: str = Field(
-        ...,
-        description="Detailed explanation of the issue"
-    )
-    priority: str = Field(
-        ...,
-        description="Priority level: Low, Medium, High"
-    )
-    labels: List[str] = Field(
-        ...,
-        description="List of tags for categorization"
-    )
+    title: str
+    description: str
+    priority: Literal["Low", "Medium", "High"]
+    labels: list[str]
 
-    # --- Enforce enum manually (matches JSON schema) ---
-    @classmethod
-    @field_validator("priority")
-    def validate_priority(cls, v: str) -> str:
-        """
-            Validate that priority is one of the allowed values.
-        """
-        allowed = {"Low", "Medium", "High"}
-        if v not in allowed:
-            raise ValueError(f"priority must be one of {allowed}")
-        return v
-
-    class Config:
+    class Config:  # pylint: disable=too-few-public-methods
         """
             Pydantic configuration to match JSON schema constraints.
+
+            - `extra = "forbid"` ensures that any additional fields
+            not defined in the model will cause validation to fail,
+            enforcing a strict schema.
         """
-        extra = "forbid"  # matches "additionalProperties": False
+        extra = "forbid"
 
 
 # --- Utility Functions ---
 
-def parse_ticket(json_str: str) -> Ticket:
+def parse_ticket(json_str: JSONStr) -> Ticket:
     """
     Parse raw JSON string into a validated Ticket object.
     Raises ValidationError if invalid.
@@ -60,7 +52,9 @@ def parse_ticket(json_str: str) -> Ticket:
     return Ticket(**data)
 
 
-def try_parse_ticket(json_str: str):
+def try_parse_ticket(
+    json_str: JSONStr
+) -> tuple[Optional[Ticket], Optional[ErrStr]]:
     """
     Safe parse: returns (ticket, error)
     """
@@ -70,7 +64,7 @@ def try_parse_ticket(json_str: str):
         return None, str(e)
 
 
-def ticket_to_json(ticket: Ticket, pretty: bool = True) -> str:
+def ticket_to_json(ticket: Ticket, pretty: bool = True) -> JSONStr:
     """
     Serialize Ticket back to JSON.
     """
