@@ -1,30 +1,32 @@
 """
-    Ticket Utility Module
+Ticket Utility Module
 """
+
 import json
-from typing import Literal, Optional
+from typing import Any, Literal
 
 from pydantic import BaseModel, ValidationError
 
 from utilities.type_util import ErrStr, JSONStr
 
-
 # --- Ticket Model ---
+
 
 class Ticket(BaseModel):
     """
-        Uses pydantic model to represent a structured Jira ticket
+    Uses pydantic model to represent a structured Jira ticket
 
-        Pydantic models are used here to provide a strict validation boundary
-        for untrusted input (e.g., AI-generated data).
+    Pydantic models are used here to provide a strict validation boundary
+    for untrusted input (e.g., AI-generated data).
 
-        They enforce schema correctness, perform type coercion,
-        and fail fast with clear errors when data is invalid.
+    They enforce schema correctness, perform type coercion,
+    and fail fast with clear errors when data is invalid.
 
-        This ensures only well-formed, reliable ticket data enters the system,
-        reducing bugs, simplifying parsing, and improving debuggability in
-        production pipelines.
+    This ensures only well-formed, reliable ticket data enters the system,
+    reducing bugs, simplifying parsing, and improving debuggability in
+    production pipelines.
     """
+
     title: str
     description: str
     priority: Literal["Low", "Medium", "High"]
@@ -32,16 +34,18 @@ class Ticket(BaseModel):
 
     class Config:  # pylint: disable=too-few-public-methods
         """
-            Pydantic configuration to match JSON schema constraints.
+        Pydantic configuration to match JSON schema constraints.
 
-            - `extra = "forbid"` ensures that any additional fields
-            not defined in the model will cause validation to fail,
-            enforcing a strict schema.
+        - `extra = "forbid"` ensures that any additional fields
+        not defined in the model will cause validation to fail,
+        enforcing a strict schema.
         """
+
         extra = "forbid"
 
 
 # --- Utility Functions ---
+
 
 def parse_ticket(json_str: JSONStr) -> Ticket:
     """
@@ -52,9 +56,7 @@ def parse_ticket(json_str: JSONStr) -> Ticket:
     return Ticket(**data)
 
 
-def try_parse_ticket(
-    json_str: JSONStr
-) -> tuple[Optional[Ticket], Optional[ErrStr]]:
+def try_parse_ticket(json_str: JSONStr) -> tuple[Ticket | None, ErrStr | None]:
     """
     Safe parse: returns (ticket, error)
     """
@@ -73,7 +75,7 @@ def ticket_to_json(ticket: Ticket, pretty: bool = True) -> JSONStr:
     return ticket.model_dump_json()
 
 
-def ticket_to_dict(ticket: Ticket) -> dict:
+def ticket_to_dict(ticket: Ticket) -> dict[str, Any]:
     """
     Convert Ticket to Python dict.
     """

@@ -1,18 +1,19 @@
 """
-    Logger utility that writes to
-    ~/logs/<log_name>.log.<YYYY>-<MM>-<DD>.<HH>-00
+Logger utility that writes to
+~/logs/<log_name>.log.<YYYY>-<MM>-<DD>.<HH>-00
 
-    Rotates automatically when the hour changes.
+Rotates automatically when the hour changes.
 """
+
 import json
 import logging
-from pathlib import Path
 from datetime import datetime
-from typing import Dict
+from pathlib import Path
 
+from utilities.type_util import Json
 
 # Cache of active loggers per timestamp
-timestamp_to_logger_cache: Dict[str, logging.Logger] = {}
+timestamp_to_logger_cache: dict[str, logging.Logger] = {}
 
 
 def _get_hour_timestamp() -> str:
@@ -55,7 +56,7 @@ def get_hourly_logger(
     # Formatter
     formatter = logging.Formatter(
         fmt="%(asctime)s | %(levelname)s | %(name)s | %(message)s",
-        datefmt="%Y-%m-%d %H:%M:%S"
+        datefmt="%Y-%m-%d %H:%M:%S",
     )
 
     # File handler
@@ -77,6 +78,6 @@ def get_hourly_logger(
     return logger
 
 
-def pretty_print_json(data: dict) -> str:
+def pretty_print_json(data: Json) -> str:
     """Utility to pretty print JSON data."""
-    return json.dumps(data, indent=4).encode('utf-8').decode('unicode_escape')
+    return json.dumps(data, indent=4, ensure_ascii=False)

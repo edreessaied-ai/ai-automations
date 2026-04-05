@@ -1,10 +1,11 @@
 """
-    Main API for the AI Automations project.
+Main API for the AI Automations project.
 """
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+
 from agents.frontdesk_agent import run_agent
 
 app = FastAPI()
@@ -22,20 +23,27 @@ class ChatRequest(BaseModel):
     """
     Request model for chat endpoint.
     """
+
     message: str
 
 
-@app.post("/chat")
-async def chat(req: ChatRequest):
+@app.post("/chat")  # type: ignore[misc]
+async def chat(req: ChatRequest) -> str:
     """
-    Chat endpoint.
+    Chat endpoint that takes user message,
+    and returns AI-generated message.
     """
     result = await run_agent(req.message)
-    return result["message"]
+
+    message = result.get("message")
+    if not isinstance(message, str):
+        raise ValueError("Invalid response from agent")
+
+    return message
 
 
-@app.get("/")
-def root():
+@app.get("/")  # type: ignore[misc]
+def root() -> dict[str, str]:
     """
     Root endpoint.
     """

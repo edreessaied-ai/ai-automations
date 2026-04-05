@@ -1,11 +1,14 @@
 """
-    Type Utility Module
+Type Utility Module
 
-    This modules defines a set of useful types that can be used
-    across the codebase to improve readability, maintainability,
-    and type safety.
+This modules defines a set of useful types that can be used
+across the codebase to improve readability, maintainability,
+and type safety.
 """
 
+from typing import Any
 
 JSONStr = str
 ErrStr = str
+
+type Json = dict[str, Any]
