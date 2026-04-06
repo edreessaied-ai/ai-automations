@@ -1,15 +1,12 @@
 #!/usr/bin/env python3
 """
-ticket_agent.py
-
-Core AI logic for:
-- Generating Jira tickets from messy input
-- Improving existing tickets
-- Editing tickets via natural language instructions
+Ticket Agent CLI
 """
 
+import argparse
 import json
 import os
+from pathlib import Path
 from typing import Any
 
 from openai import OpenAI
@@ -18,22 +15,26 @@ from utilities.logger import get_hourly_logger, pretty_print_json
 from utilities.type_util import Json
 
 ticket_agent_logger = get_hourly_logger("ticket_agent")
-
-# ----------------------------
-# Typing
-# ----------------------------
-
-
-# ----------------------------
-# OpenAI setup
-# ----------------------------
-
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 OPENAI_CLIENT = OpenAI(api_key=OPENAI_API_KEY)
 
-# ----------------------------
-# Prompt + Schema
-# ----------------------------
+# =========================
+# Helpers
+# =========================
+
+
+def load_input_file(file_path: str) -> str:
+    """Read raw input text from a file."""
+    return Path(file_path).read_text(encoding="utf-8").strip()
+
+
+def save_output(file_path: str, data: dict[str, Any]) -> None:
+    """Save JSON output to a file."""
+    Path(file_path).write_text(
+        json.dumps(data, indent=2, ensure_ascii=False),
+        encoding="utf-8",
+    )
+
 
 SYSTEM_PROMPT = """
 You are an assistant that converts user input into high-quality Jira tickets.
@@ -41,7 +42,7 @@ You are an assistant that converts user input into high-quality Jira tickets.
 Your job is to transform messy, incomplete, or
 unstructured input into a clean, structured ticket.
 
-Output MUST be valid Json with the following fields:
+Output MUST be valid JSON with the following fields:
 - title: a concise summary of the issue
 - description: a clear, structured explanation of the issue
 - priority: one of ["Low", "Medium", "High"]
@@ -54,13 +55,13 @@ Guidelines:
 - Structure the description with sections when helpful
 (e.g., Context, Impact, Steps to Reproduce)
 - Prioritize clarity over verbosity
-- Do NOT include any text outside the Json
+- Do NOT include any text outside the JSON
 
 If the input already contains structure (e.g., Title:, Description:), use it.
 Otherwise, infer structure from the input.
 """
 
-TICKET_SCHEMA: Json = {
+TICKET_SCHEMA: dict[str, Any] = {
     "type": "object",
     "properties": {
         "title": {"type": "string"},
@@ -72,28 +73,8 @@ TICKET_SCHEMA: Json = {
     "additionalProperties": False,
 }
 
-# ----------------------------
-# Internal Helpers
-# ----------------------------
 
-
-def _decode_escapes(obj: Any) -> Any:
-    """
-    Recursively decodes escape sequences in a nested Json-like structure.
-    """
-    if isinstance(obj, str):
-        return obj.replace("\\n", "\n")
-    if isinstance(obj, dict):
-        return {k: _decode_escapes(v) for k, v in obj.items()}
-    if isinstance(obj, list):
-        return [_decode_escapes(v) for v in obj]
-    return obj
-
-
-def _call_llm(user_prompt: str) -> Json:
-    """
-    Calls the LLM and enforces that output is a Json object.
-    """
+def _call_llm(user_prompt: str) -> dict[str, Any]:
     response = OPENAI_CLIENT.responses.create(
         model="gpt-4.1-mini",
         input=[
@@ -110,13 +91,20 @@ def _call_llm(user_prompt: str) -> Json:
         },
     )
 
-    parsed = json.loads(response.output[0].content[0].text)
-    decoded = _decode_escapes(parsed)
+    def _decode_escapes(obj_to_decode: Json) -> Json:
+        """
+        Recursively decodes escape sequences in a nested JSON-like structure.
+        """
+        if isinstance(obj_to_decode, str):
+            return obj_to_decode.replace("\\n", "\n")
+        elif isinstance(obj_to_decode, dict):
+            return {k: _decode_escapes(v) for k, v in obj_to_decode.items()}
+        elif isinstance(obj_to_decode, list):
+            return [_decode_escapes(v) for v in obj_to_decode]
+        return obj_to_decode
 
-    if not isinstance(decoded, dict):
-        raise ValueError("LLM did not return a Json object")
-
-    return decoded
+    parsed = _decode_escapes(json.loads(response.output[0].content[0].text))
+    return parsed
 
 
 # =========================
@@ -124,7 +112,7 @@ def _call_llm(user_prompt: str) -> Json:
 # =========================
 
 
-def generate_ticket(user_input: str) -> Json:
+def generate_ticket(user_input: str) -> dict[str, Any]:
     """
     Convert messy user input into a structured Jira ticket.
     """
@@ -136,7 +124,7 @@ Convert the following into a structured Jira ticket:
     return _call_llm(prompt)
 
 
-def improve_ticket(current_ticket: Json) -> Json:
+def improve_ticket(current_ticket: dict[str, Any]) -> dict[str, Any]:
     """
     Improve an existing ticket by enhancing clarity,
     structure, and completeness.
@@ -151,7 +139,7 @@ Ticket:
     return _call_llm(prompt)
 
 
-def edit_ticket(current_ticket: Json, instruction: str) -> Json:
+def edit_ticket(current_ticket: dict[str, Any], instruction: str) -> dict[str, Any]:
     """
     Modify a ticket based on a natural language instruction.
     """
@@ -170,34 +158,81 @@ Return the fully updated ticket.
 
 
 # =========================
-# Local Testing
+# Main Ticket Agent CLI
 # =========================
 
-if __name__ == "__main__":
-    ticket_agent_logger.info("Starting ticket agent tests...")
 
-    input_content = "payments failing for EU users after deploy"
+def ticket_agent() -> None:
+    """
+    CLI for the Ticket Agent.
+    """
+    parser = argparse.ArgumentParser(description="Ticket Agent CLI")
+    parser.add_argument("file", help="Path to input text file")
+
+    group = parser.add_mutually_exclusive_group(required=True)
+    group.add_argument("--generate-ticket", action="store_true")
+    group.add_argument("--improve-ticket", action="store_true")
+    group.add_argument("--edit-ticket", action="store_true")
+
+    parser.add_argument(
+        "--edit-prompt",
+        type=str,
+        default=None,
+        help="Edit instruction (required for --edit-ticket)",
+    )
+    parser.add_argument(
+        "--output",
+        type=str,
+        default=None,
+        help="Optional output file path",
+    )
+
+    args = parser.parse_args()
+
+    # Load input
+    input_content = load_input_file(args.file)
+
+    ticket_agent_logger.info("Loaded input from file: %s", args.file)
     ticket_agent_logger.info("Input content: %s", input_content)
 
-    # Generate ticket
-    ticket_agent_logger.info("Generating ticket...")
-    ticket = generate_ticket(input_content)
-    ticket_agent_logger.info("Generated ticket:")
-    ticket_agent_logger.info(pretty_print_json(ticket))
+    result: dict[str, Any]
 
-    # Improve ticket
-    ticket_agent_logger.info("Improving ticket...")
-    improved_ticket = improve_ticket(ticket)
-    ticket_agent_logger.info("Improved ticket:")
-    ticket_agent_logger.info(pretty_print_json(improved_ticket))
+    # =========================
+    # Execute action
+    # =========================
 
-    # Edit ticket
-    ticket_agent_logger.info("Editing ticket...")
-    edited_ticket = edit_ticket(
-        improved_ticket,
-        "lower priority to medium and mention mobile users",
-    )
-    ticket_agent_logger.info("Edited ticket:")
-    ticket_agent_logger.info(pretty_print_json(edited_ticket))
+    if args.generate_ticket:
+        ticket_agent_logger.info("Generating ticket...")
+        result = generate_ticket(input_content)
 
-    ticket_agent_logger.info("Tests complete.")
+    elif args.improve_ticket:
+        ticket_agent_logger.info("Generating + improving ticket...")
+        ticket = generate_ticket(input_content)
+        result = improve_ticket(ticket)
+
+    elif args.edit_ticket:
+        if not args.edit_prompt:
+            raise ValueError("--edit-prompt is required for --edit-ticket")
+
+        ticket_agent_logger.info("Generating + improving + editing ticket...")
+        ticket = generate_ticket(input_content)
+        improved = improve_ticket(ticket)
+        result = edit_ticket(improved, args.edit_prompt)
+
+    else:
+        raise ValueError("No valid action provided")
+
+    # =========================
+    # Output
+    # =========================
+
+    ticket_agent_logger.info("Final result:")
+    ticket_agent_logger.info(pretty_print_json(result))
+
+    if args.output:
+        save_output(args.output, result)
+        ticket_agent_logger.info("Saved output to: %s", args.output)
+
+
+if __name__ == "__main__":
+    ticket_agent()
