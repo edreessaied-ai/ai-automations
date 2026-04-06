@@ -185,6 +185,9 @@ def ticket_agent() -> None:
     group.add_argument("--generate-ticket", action="store_true")
     group.add_argument("--improve-ticket", action="store_true")
     group.add_argument("--edit-ticket", action="store_true")
+    parser.add_argument(
+        "-v", "--verbose", action="store_true", help="Print the raw JSON output"
+    )
 
     parser.add_argument(
         "--edit-prompt",
@@ -239,7 +242,10 @@ def ticket_agent() -> None:
     # =========================
 
     ticket_agent_logger.info("Final result:")
-    ticket_agent_logger.info(pretty_print_ticket(result))
+    pretty_printed_res = pretty_print_ticket(result)
+    ticket_agent_logger.info(pretty_printed_res)
+    if args.verbose:
+        print(pretty_printed_res)
 
 
 if __name__ == "__main__":
