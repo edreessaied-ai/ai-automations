@@ -64,6 +64,11 @@ Instead:
 - Write a short, neutral description (1 sentence max)
 - Keep the output minimal and literal
 - Default priority to "Low"
+
+If the input contains irrelevant,
+nonsensical, or offensive content:
+- Ignore unrelated or non-actionable portions
+- Focus only on extracting the actionable issue
 """
 
 TICKET_SCHEMA: JsonSchema = {
