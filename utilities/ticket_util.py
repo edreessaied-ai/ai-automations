@@ -80,3 +80,16 @@ def ticket_to_dict(ticket: Ticket) -> dict[str, Any]:
     Convert Ticket to Python dict.
     """
     return ticket.model_dump()
+
+
+def pretty_print_ticket(ticket: Ticket) -> str:
+    """
+    Utility to pretty print a Ticket object.
+    """
+    return (
+        "\n\n"
+        f"Title: \n{ticket.title}\n\n"
+        f"Priority: \n{ticket.priority}\n\n"
+        f"Labels: \n{', '.join(ticket.labels)}\n\n"
+        f"Description:\n{ticket.description}"
+    )

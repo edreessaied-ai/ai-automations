@@ -11,8 +11,8 @@ from typing import Any
 
 from openai import OpenAI
 
-from utilities.logger import get_hourly_logger, pretty_print_json
-from utilities.type_util import Json
+from utilities.logger import get_hourly_logger
+from utilities.ticket_util import Ticket, pretty_print_ticket
 
 ticket_agent_logger = get_hourly_logger("ticket_agent")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
@@ -26,14 +26,6 @@ OPENAI_CLIENT = OpenAI(api_key=OPENAI_API_KEY)
 def load_input_file(file_path: str) -> str:
     """Read raw input text from a file."""
     return Path(file_path).read_text(encoding="utf-8").strip()
-
-
-def save_output(file_path: str, data: dict[str, Any]) -> None:
-    """Save JSON output to a file."""
-    Path(file_path).write_text(
-        json.dumps(data, indent=2, ensure_ascii=False),
-        encoding="utf-8",
-    )
 
 
 SYSTEM_PROMPT = """
@@ -74,7 +66,7 @@ TICKET_SCHEMA: dict[str, Any] = {
 }
 
 
-def _call_llm(user_prompt: str) -> dict[str, Any]:
+def _call_llm(user_prompt: str) -> Any:
     response = OPENAI_CLIENT.responses.create(
         model="gpt-4.1-mini",
         input=[
@@ -91,17 +83,18 @@ def _call_llm(user_prompt: str) -> dict[str, Any]:
         },
     )
 
-    def _decode_escapes(obj_to_decode: Json) -> Json:
+    def _decode_escapes(obj: Any) -> Any:
         """
-        Recursively decodes escape sequences in a nested JSON-like structure.
+        Recursively decode escape sequences in
+        a JSON object.
         """
-        if isinstance(obj_to_decode, str):
-            return obj_to_decode.replace("\\n", "\n")
-        elif isinstance(obj_to_decode, dict):
-            return {k: _decode_escapes(v) for k, v in obj_to_decode.items()}
-        elif isinstance(obj_to_decode, list):
-            return [_decode_escapes(v) for v in obj_to_decode]
-        return obj_to_decode
+        if isinstance(obj, str):
+            return obj.encode("utf-8").decode("unicode_escape")
+        if isinstance(obj, dict):
+            return {k: _decode_escapes(v) for k, v in obj.items()}
+        if isinstance(obj, list):
+            return [_decode_escapes(v) for v in obj]
+        return obj
 
     parsed = _decode_escapes(json.loads(response.output[0].content[0].text))
     return parsed
@@ -112,7 +105,7 @@ def _call_llm(user_prompt: str) -> dict[str, Any]:
 # =========================
 
 
-def generate_ticket(user_input: str) -> dict[str, Any]:
+def generate_ticket(user_input: str) -> Ticket:
     """
     Convert messy user input into a structured Jira ticket.
     """
@@ -121,10 +114,10 @@ Convert the following into a structured Jira ticket:
 
 {user_input}
 """
-    return _call_llm(prompt)
+    return Ticket(**_call_llm(prompt))
 
 
-def improve_ticket(current_ticket: dict[str, Any]) -> dict[str, Any]:
+def improve_ticket(current_ticket: Ticket) -> Ticket:
     """
     Improve an existing ticket by enhancing clarity,
     structure, and completeness.
@@ -134,12 +127,12 @@ Improve the following Jira ticket. Make it clearer, more structured,
 and more complete, while preserving the original intent.
 
 Ticket:
-{pretty_print_json(current_ticket)}
+{pretty_print_ticket(current_ticket)}
 """
-    return _call_llm(prompt)
+    return Ticket(**_call_llm(prompt))
 
 
-def edit_ticket(current_ticket: dict[str, Any], instruction: str) -> dict[str, Any]:
+def edit_ticket(current_ticket: Ticket, instruction: str) -> Ticket:
     """
     Modify a ticket based on a natural language instruction.
     """
@@ -150,11 +143,11 @@ Instruction:
 {instruction}
 
 Current Ticket:
-{pretty_print_json(current_ticket)}
+{pretty_print_ticket(current_ticket)}
 
 Return the fully updated ticket.
 """
-    return _call_llm(prompt)
+    return Ticket(**_call_llm(prompt))
 
 
 # =========================
@@ -195,7 +188,7 @@ def ticket_agent() -> None:
     ticket_agent_logger.info("Loaded input from file: %s", args.file)
     ticket_agent_logger.info("Input content: %s", input_content)
 
-    result: dict[str, Any]
+    result: Ticket
 
     # =========================
     # Execute action
@@ -227,11 +220,7 @@ def ticket_agent() -> None:
     # =========================
 
     ticket_agent_logger.info("Final result:")
-    ticket_agent_logger.info(pretty_print_json(result))
-
-    if args.output:
-        save_output(args.output, result)
-        ticket_agent_logger.info("Saved output to: %s", args.output)
+    ticket_agent_logger.info(pretty_print_ticket(result))
 
 
 if __name__ == "__main__":
