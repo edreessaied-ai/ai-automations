@@ -13,6 +13,7 @@ from openai import OpenAI
 
 from utilities.logger import get_hourly_logger
 from utilities.ticket_util import Ticket, pretty_print_ticket
+from utilities.type_util import JsonSchema
 
 ticket_agent_logger = get_hourly_logger("ticket_agent")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
@@ -53,7 +54,7 @@ If the input already contains structure (e.g., Title:, Description:), use it.
 Otherwise, infer structure from the input.
 """
 
-TICKET_SCHEMA: dict[str, Any] = {
+TICKET_SCHEMA: JsonSchema = {
     "type": "object",
     "properties": {
         "title": {"type": "string"},
@@ -66,7 +67,7 @@ TICKET_SCHEMA: dict[str, Any] = {
 }
 
 
-def _call_llm(user_prompt: str) -> Any:
+def _call_llm(user_prompt: str) -> Ticket:
     response = OPENAI_CLIENT.responses.create(
         model="gpt-4.1-mini",
         input=[
@@ -96,8 +97,9 @@ def _call_llm(user_prompt: str) -> Any:
             return [_decode_escapes(v) for v in obj]
         return obj
 
+    # parsed is the final dict with all escape sequences decoded
     parsed = _decode_escapes(json.loads(response.output[0].content[0].text))
-    return parsed
+    return Ticket(**parsed)
 
 
 # =========================
@@ -114,7 +116,7 @@ Convert the following into a structured Jira ticket:
 
 {user_input}
 """
-    return Ticket(**_call_llm(prompt))
+    return _call_llm(prompt)
 
 
 def improve_ticket(current_ticket: Ticket) -> Ticket:
@@ -129,7 +131,7 @@ and more complete, while preserving the original intent.
 Ticket:
 {pretty_print_ticket(current_ticket)}
 """
-    return Ticket(**_call_llm(prompt))
+    return _call_llm(prompt)
 
 
 def edit_ticket(current_ticket: Ticket, instruction: str) -> Ticket:
@@ -147,7 +149,7 @@ Current Ticket:
 
 Return the fully updated ticket.
 """
-    return Ticket(**_call_llm(prompt))
+    return _call_llm(prompt)
 
 
 # =========================
