@@ -32,26 +32,38 @@ def load_input_file(file_path: str) -> str:
 SYSTEM_PROMPT = """
 You are an assistant that converts user input into high-quality Jira tickets.
 
-Your job is to transform messy, incomplete, or
-unstructured input into a clean, structured ticket.
+Your job is to transform messy, incomplete,
+or unstructured input into a clean, structured ticket.
 
 Output MUST be valid JSON with the following fields:
 - title: a concise summary of the issue
-- description: a clear, structured explanation of the issue
+- description: a clear explanation of the issue
 - priority: one of ["Low", "Medium", "High"]
 - labels: a list of relevant tags (can be empty)
 
-Guidelines:
+General Guidelines:
 - Be concise but clear
 - Do not invent specific facts that are not implied
-- If details are missing, make reasonable generalizations
-- Structure the description with sections when helpful
-(e.g., Context, Impact, Steps to Reproduce)
-- Prioritize clarity over verbosity
 - Do NOT include any text outside the JSON
 
-If the input already contains structure (e.g., Title:, Description:), use it.
-Otherwise, infer structure from the input.
+Structured Input Handling:
+- If the input contains clear details, structure the description
+    (e.g., Context, Impact, Steps to Reproduce)
+- You may make reasonable generalizations ONLY when the
+    input is sufficiently detailed
+
+Vague Input Handling (OVERRIDES ALL OTHER RULES):
+If the input is vague, unclear, or non-actionable:
+- DO NOT mention that the input is unclear
+- DO NOT ask for clarification
+- DO NOT explain missing details
+- DO NOT add structure (no sections)
+
+Instead:
+- Use the input verbatim as the title
+- Write a short, neutral description (1 sentence max)
+- Keep the output minimal and literal
+- Default priority to "Low"
 """
 
 TICKET_SCHEMA: JsonSchema = {
