@@ -227,7 +227,12 @@ def test_ai_null_injection() -> None:
     """Null values in required fields should be rejected."""
     with pytest.raises(ValidationError):
         Ticket.model_validate(
-            {"title": None, "description": None, "priority": "High", "labels": []}
+            {
+                "title": None,
+                "description": None,
+                "priority": "High",
+                "labels": [],
+            }
         )
 
 

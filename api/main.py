@@ -1,6 +1,7 @@
 """
 Main API for the AI Automations project.
 """
+# mypy: disable-error-code=misc
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -98,7 +99,7 @@ async def api_edit_ticket(req: EditTicketRequest) -> Ticket:
     return edit_ticket(req.ticket, req.instruction)
 
 
-@app.get("/")  # type: ignore[misc]
+@app.get("/")
 def root() -> dict[str, str]:
     """
     Root endpoint.
