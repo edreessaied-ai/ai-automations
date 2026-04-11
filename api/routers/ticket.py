@@ -20,9 +20,9 @@ Key Design Principles:
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from services.jira_service import JiraService
-from services.ticket_service import TicketService
 
+from api.services.jira_service import JiraService
+from api.services.ticket_service import TicketService
 from utilities.ticket_util import Ticket
 
 # -------------------------

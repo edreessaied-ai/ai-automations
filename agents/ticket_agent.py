@@ -201,7 +201,10 @@ def ticket_agent() -> None:
     group.add_argument("--improve-ticket", action="store_true")
     group.add_argument("--edit-ticket", action="store_true")
     parser.add_argument(
-        "-v", "--verbose", action="store_true", help="Print the raw JSON output"
+        "-v",
+        "--verbose",
+        action="store_true",
+        help="Print the raw JSON output"
     )
 
     parser.add_argument(
