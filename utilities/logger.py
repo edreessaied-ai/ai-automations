@@ -22,8 +22,8 @@ def _get_hour_timestamp() -> str:
     return now.strftime("%Y-%m-%d.%H-00")
 
 
-def get_hourly_logger(
-    log_name: str,
+def get_logger(
+    log_name: str = "agent-lifecycle",
     level: int = logging.INFO,
     write_to_console: bool = False,
 ) -> logging.Logger:

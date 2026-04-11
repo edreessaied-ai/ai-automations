@@ -16,3 +16,9 @@ type Json = dict[str, Any]
 AIResponse = object
 
 JsonSchema = dict[str, object]
+
+URLStr = str
+
+EmailStr = str
+
+TokenStr = str

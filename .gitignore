@@ -6,3 +6,7 @@ __pycache__/
 *.pyc
 .pytest_cache/
 input.txt
+.hypothesis/
+.history/
+.mypy_cache/
+.ruff_cache/

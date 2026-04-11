@@ -11,11 +11,11 @@ from typing import Any
 
 from openai import OpenAI
 
-from utilities.logger import get_hourly_logger
+from utilities.logger import get_logger
 from utilities.ticket_util import Ticket, pretty_print_ticket
 from utilities.type_util import JsonSchema
 
-ticket_agent_logger = get_hourly_logger("ticket_agent")
+ticket_agent_logger = get_logger("ticket_agent")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 OPENAI_CLIENT = OpenAI(api_key=OPENAI_API_KEY)
 
@@ -84,7 +84,10 @@ TICKET_SCHEMA: JsonSchema = {
 }
 
 
-def _call_llm(user_prompt: str) -> Ticket:
+def send_ticket_request_to_llm(user_prompt: str) -> Ticket:
+    """
+    Send a request to the LLM to generate a ticket based on the user prompt.
+    """
     response = OPENAI_CLIENT.responses.create(
         model="gpt-4.1-mini",
         input=[
@@ -133,7 +136,7 @@ Convert the following into a structured Jira ticket:
 
 {user_input}
 """
-    return _call_llm(prompt)
+    return send_ticket_request_to_llm(prompt)
 
 
 def improve_ticket(current_ticket: Ticket) -> Ticket:
@@ -148,7 +151,7 @@ and more complete, while preserving the original intent.
 Ticket:
 {pretty_print_ticket(current_ticket)}
 """
-    return _call_llm(prompt)
+    return send_ticket_request_to_llm(prompt)
 
 
 def edit_ticket(current_ticket: Ticket, instruction: str) -> Ticket:
@@ -166,7 +169,19 @@ Current Ticket:
 
 Return the fully updated ticket.
 """
-    return _call_llm(prompt)
+    return send_ticket_request_to_llm(prompt)
+
+
+def create_ticket_in_jira(ticket: Ticket, project_key: str) -> dict[str, str]:
+    """
+    Create a ticket in Jira based on the provided ticket data and project key.
+    Placeholder implementation - replace with actual Jira API call.
+    """
+    # Placeholder implementation - replace with actual Jira API call
+    return {
+        "message": f"Ticket created in project "
+        f"{project_key} with title: {ticket.title}"
+    }
 
 
 # =========================

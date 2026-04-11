@@ -240,7 +240,7 @@ def test_ai_null_injection() -> None:
     title=st.text(),
     description=st.text(),
     priority=st.sampled_from(["Low", "Medium", "High"]),
-)  # type: ignore [misc]
+)
 def test_fuzz_valid_structure(
     title: str,
     description: str,

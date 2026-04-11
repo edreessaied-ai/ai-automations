@@ -18,7 +18,7 @@ select = [
     "UP",  # pyupgrade
 ]
 
-ignore = []
+ignore = ["UP047"]
 
 [tool.ruff.format]
 quote-style = "double"
@@ -28,6 +28,7 @@ python_version = "3.12"
 strict = true
 plugins = ["pydantic.mypy"]
 enable_incomplete_feature = ["NewGenericSyntax"]
+disable_error_code = ["untyped-decorator"]
 
 exclude = "ai-tools-venv|venv|.venv"
 
@@ -37,3 +38,10 @@ disallow_untyped_defs = true
 disallow_incomplete_defs = true
 check_untyped_defs = true
 no_implicit_optional = true
+
+[tool.pylint]
+disable = ["logging-fstring-interpolation"]
+
+[tool.pylint.DESIGN]
+max-args = 10
+max-positional-arguments = 10
