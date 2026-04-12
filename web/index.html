@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Jira Ticket Drafter</title>
+<title>AI Automations Engineering</title>
 
 <style>
 
@@ -40,72 +40,26 @@ section {
   box-shadow: 0 12px 28px rgba(0,0,0,0.08);
 }
 
-#form-state { border-top: 6px solid #6b8f7a; }
-#loading-state { border-top: 6px solid #6b8f7a; text-align: center; }
-
-form { margin-top: 32px; }
-
-label {
-  display: block;
-  font-weight: 600;
-  margin-top: 28px;
-  margin-bottom: 10px;
-  font-size: 18px;
-  color: #4a3c28;
-}
-
-input, select, textarea {
-  width: 100%;
-  padding: 16px;
-  font-size: 18px;
-  border-radius: 10px;
-  border: 1px solid #d6cbb8;
-  box-sizing: border-box;
-  background-color: #fffdf9;
-}
-
-textarea {
-  min-height: 180px;
-  max-height: 90vh;
-  resize: both;
-  overflow: auto;
-  transition: background-color 0.2s ease, box-shadow 0.2s ease;
-}
-
-.fullscreen-textarea {
-  position: fixed;
-  inset: 20px;
-  width: auto !important;
-  height: auto !important;
-  z-index: 9999;
-  background-color: #fffdf5;
-  box-shadow: 0 0 0 100vmax rgba(0,0,0,0.35);
-}
-
 /* ===== Buttons ===== */
 
 .btn {
   display: inline-block;
-  margin-top: 36px;
+  margin-top: 18px;
   padding: 16px 32px;
   font-size: 18px;
   border-radius: 12px;
   border: none;
   cursor: pointer;
-  transition: background-color 0.2s ease, transform 0.1s ease;
+  text-decoration: none;
+  transition: 0.2s ease;
+  text-align: center;
 }
 
 .btn:hover { transform: translateY(-1px); }
 
-.btn.disabled { background-color: #9ca3af; cursor: not-allowed; }
-
 .btn.navy {
   background-color: #0a2540;
   color: #fff;
-}
-
-.btn.navy:hover {
-  background-color: #081e33;
 }
 
 .btn.pine {
@@ -113,39 +67,25 @@ textarea {
   color: #fff;
 }
 
-.btn.pine:hover {
-  background-color: #185f4e;
-}
-
 .btn.lead {
   background-color: #1f7a63;
   color: #fff;
 }
 
-.btn.lead:hover {
-  background-color: #185f4e;
-}
+/* ===== Layout ===== */
 
 .actions {
   text-align: center;
-  margin-top: 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 24px;
 }
+
+/* ===== Hidden State ===== */
 
 .hidden {
   display: none;
-}
-
-/* ===== Validation ===== */
-
-.error {
-  color: #b91c1c;
-  font-size: 14px;
-  margin-top: 6px;
-}
-
-.input-error {
-  border-color: #b91c1c;
-  background-color: #fff5f5;
 }
 
 /* ===== Loading Spinner ===== */
@@ -167,18 +107,44 @@ textarea {
 .loading-text {
   font-size: 18px;
   color: #5a4a32;
+  text-align: center;
 }
 
 </style>
 
 <link rel="icon" href="src/form.png" type="image/png">
-
 </head>
 
 <body>
 
-<!-- ===== Form State ===== -->
+<!-- =========================
+LANDING PAGE
+========================= -->
+<section id="landing-state">
+  <h1>AI Automations Engineering</h1>
 
+  <p>
+    Choose how you want to interact with the system.
+  </p>
+
+  <div class="actions">
+    <button class="btn navy" onclick="showForm()">
+      Create Ticket
+    </button>
+
+    <a class="btn pine" href="/slack">
+      Slack Assistant
+    </a>
+
+    <a class="btn lead" href="/api">
+      API Access
+    </a>
+  </div>
+</section>
+
+<!-- =========================
+FORM STATE (your existing UI)
+========================= -->
 <section id="form-state" class="hidden">
 <h1>Jira Ticket Drafter</h1>
 <p>Fill out the form below to generate a Jira ticket draft.</p>
@@ -186,12 +152,10 @@ textarea {
 <form method="POST" action="https://edreessaied.app.n8n.cloud/webhook/jira-ticket-drafter/">
 
 <label for="ticketTitle">Ticket Title</label>
-<input id="ticketTitle" name="ticketTitle" type="text" required placeholder="Short, descriptive title" />
-<div class="error" data-error-for="ticketTitle"></div>
+<input id="ticketTitle" name="ticketTitle" type="text" required />
 
 <label for="ticketDescription">Ticket Description</label>
-<textarea id="ticketDescription" name="ticketDescription" required placeholder="Describe the issue, expected behavior, impact, etc."></textarea>
-<div class="error" data-error-for="ticketDescription"></div>
+<textarea id="ticketDescription" name="ticketDescription" required></textarea>
 
 <label for="ticketType">Ticket Type</label>
 <select id="ticketType" name="ticketType" required>
@@ -202,7 +166,6 @@ textarea {
 <option>Story</option>
 <option>Epic</option>
 </select>
-<div class="error" data-error-for="ticketType"></div>
 
 <label for="ticketImpact">Ticket Impact</label>
 <select id="ticketImpact" name="ticketImpact" required>
@@ -212,83 +175,117 @@ textarea {
 <option>Minor</option>
 <option>Internal</option>
 </select>
-<div class="error" data-error-for="ticketImpact"></div>
 
 <label for="assigneeTeam">Assignee Team</label>
 <select id="assigneeTeam" name="assigneeTeam" required>
 <option value="">Select…</option>
 <option>Captains of the World</option>
 </select>
-<div class="error" data-error-for="assigneeTeam"></div>
 
 <label for="assignee">Assignee</label>
 <select id="assignee" name="assignee" required>
 <option value="">Select…</option>
 <option>Edrees Saied</option>
 </select>
-<div class="error" data-error-for="assignee"></div>
 
 <label for="userEmail">Your Email Address</label>
-<input id="userEmail" name="userEmail" type="email" required placeholder="you@company.com" />
-<div class="error" data-error-for="userEmail"></div>
+<input id="userEmail" name="userEmail" type="email" required />
 
-<label for="aiTicketDrafterEnabled">Do you want AI to enhance this draft?</label>
+<label for="aiTicketDrafterEnabled">AI Enhance?</label>
 <select id="aiTicketDrafterEnabled" name="aiTicketDrafterEnabled" required>
 <option value="">Select…</option>
 <option>Yes</option>
 <option>No</option>
 </select>
-<div class="error" data-error-for="aiTicketDrafterEnabled"></div>
 
 <div class="actions">
-<button type="submit" class="btn lead">Generate Draft</button>
+  <button type="button" class="btn navy" onclick="showLanding()">
+    ← Back
+  </button>
+  <button type="submit" class="btn lead">
+    Generate Draft
+  </button>
 </div>
 
-<input type="hidden" id="editToken" name="editToken">
-<input type="hidden" id="emailMessageId" name="emailMessageId">
 </form>
 </section>
 
-<!-- ===== Submitted State ===== -->
-
+<!-- =========================
+SUBMITTED STATE
+========================= -->
 <section id="state-submitted" class="hidden">
 <h1>Form Submitted!</h1>
 
-<p>
-Your form has been submitted successfully.<br>
-You may edit your submission or create a new one.
-</p>
+<p>Your form has been submitted successfully.</p>
 
 <div class="actions">
-<a id="edit-form" class="btn navy">Edit your form</a>
-<a id="new-form" class="btn pine">Submit a new form</a>
+<a class="btn navy" onclick="showForm()">Edit Form</a>
+<a class="btn pine" onclick="showLanding()">Home</a>
 </div>
 </section>
 
-<!-- ===== Loading State ===== -->
+<!-- =========================
+LOADING STATE
+========================= -->
 <section id="loading-state" class="hidden">
-  <h1>Loading Page</h1>
-  <div class="loading-spinner"></div>
-  <p class="loading-text">Your page is loading...</p>
+<h1>Loading...</h1>
+<div class="loading-spinner"></div>
+<p class="loading-text">Processing your request</p>
 </section>
 
-
-<!-- ===== Error State ===== -->
+<!-- =========================
+ERROR STATE
+========================= -->
 <section id="state-error" class="hidden">
-<h1>This page cannot be loaded</h1>
-<p>An error occurred while trying to load this page.</p>
+<h1>Error</h1>
+<p>Something went wrong.</p>
 </section>
 
-
-<!-- ===== Unknown State ===== -->
+<!-- =========================
+UNKNOWN STATE
+========================= -->
 <section id="unknown-state" class="hidden">
-<h1>This page cannot be loaded</h1>
-<p>The link you used is invalid or was unrecognized.</p>
+<h1>Invalid Page</h1>
+<p>The requested state was not found.</p>
 </section>
 
-<!-- ===== Scripts ===== -->
-<script type="module" src="./dist/form_interceptor.js"></script>
-<script type="module" src="./dist/ticket_drafter.js"></script>
+<!-- =========================
+STATE CONTROLLER
+========================= -->
+<script>
+function hideAll() {
+  document.querySelectorAll("section").forEach(s => s.classList.add("hidden"));
+}
+
+function showLanding() {
+  hideAll();
+  document.getElementById("landing-state").classList.remove("hidden");
+}
+
+function showForm() {
+  hideAll();
+  document.getElementById("form-state").classList.remove("hidden");
+}
+
+function showSubmitted() {
+  hideAll();
+  document.getElementById("state-submitted").classList.remove("hidden");
+}
+
+function showLoading() {
+  hideAll();
+  document.getElementById("loading-state").classList.remove("hidden");
+}
+
+function showError() {
+  hideAll();
+  document.getElementById("state-error").classList.remove("hidden");
+}
+
+window.addEventListener("DOMContentLoaded", () => {
+  showLanding();
+});
+</script>
 
 </body>
 </html>
