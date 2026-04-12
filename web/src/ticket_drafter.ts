@@ -34,7 +34,7 @@ async function mainTicketDrafterInterface(): Promise<void> {
     // If it's "edit", load the draft for editing.
     // Otherwise, show an error.
     try {
-        if (!pageState || pageState === "form") {
+        if (pageState === "form") {
             // New form
             // New form is the default state for now
             // at least until we implement a default landing page or other states.

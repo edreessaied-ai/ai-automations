@@ -23,19 +23,16 @@ slack_router = APIRouter(prefix="/slack", tags=["slack"])
 # -------------------------
 
 class SlackEvent(BaseModel):
-    type: str
+    """
+    Model for Slack Events API payloads (simplified for message events).
+    """
     user: str | None = None
     text: str | None = None
-    channel: str
-    ts: str
 
 
 class SlackCommand(BaseModel):
-    command: str
     text: str
     user_id: str
-    channel_id: str
-    response_url: str
 
 
 # -------------------------
@@ -43,6 +40,9 @@ class SlackCommand(BaseModel):
 # -------------------------
 
 def build_context(user_id: str, channel_id: str, message_ts: str, ticket):
+    """
+    Build a TicketContext from Slack event data.
+    """
     return TicketContext(
         user_id=user_id,
         channel_id=channel_id,
