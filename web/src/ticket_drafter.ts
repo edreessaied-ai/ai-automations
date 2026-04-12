@@ -69,7 +69,7 @@ async function mainTicketDrafterInterface(): Promise<void> {
             // the edit token and populate the form for editing.
             // If loading fails, show an error state.
             await retry_wrapper(() => loadTicketDraftFormFromEditToken(editToken!), { retries: 30 });
-        } else {
+        } else if (pageState) {
             // Invalid state
             showPageState("unknown-state");
         }
