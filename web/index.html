@@ -40,6 +40,36 @@ section {
   box-shadow: 0 12px 28px rgba(0,0,0,0.08);
 }
 
+/* ===== Form Styling (FIX ADDED) ===== */
+
+form {
+  margin-top: 32px;
+}
+
+label {
+  display: block;
+  font-weight: 600;
+  margin-top: 28px;
+  margin-bottom: 10px;
+  font-size: 18px;
+  color: #4a3c28;
+}
+
+input, select, textarea {
+  width: 100%;
+  padding: 16px;
+  font-size: 18px;
+  border-radius: 10px;
+  border: 1px solid #d6cbb8;
+  box-sizing: border-box;
+  background-color: #fffdf9;
+}
+
+textarea {
+  min-height: 180px;
+  resize: vertical;
+}
+
 /* ===== Buttons ===== */
 
 .btn {
@@ -82,6 +112,19 @@ section {
   margin-top: 24px;
 }
 
+/* ===== Validation ===== */
+
+.error {
+  color: #b91c1c;
+  font-size: 14px;
+  margin-top: 6px;
+}
+
+.input-error {
+  border-color: #b91c1c;
+  background-color: #fff5f5;
+}
+
 /* ===== Hidden State ===== */
 
 .hidden {
@@ -117,9 +160,7 @@ section {
 
 <body>
 
-<!-- =========================
-LANDING PAGE
-========================= -->
+<!-- LANDING -->
 <section id="landing-state">
   <h1>AI Automations Headquarters</h1>
 
@@ -142,9 +183,7 @@ LANDING PAGE
   </div>
 </section>
 
-<!-- =========================
-FORM STATE (your existing UI)
-========================= -->
+<!-- FORM -->
 <section id="form-state" class="hidden">
 <h1>Jira Ticket Drafter</h1>
 <p>Fill out the form below to generate a Jira ticket draft.</p>
@@ -218,12 +257,9 @@ FORM STATE (your existing UI)
 </form>
 </section>
 
-<!-- =========================
-SUBMITTED STATE
-========================= -->
+<!-- SUBMITTED -->
 <section id="state-submitted" class="hidden">
 <h1>Form Submitted!</h1>
-
 <p>Your form has been submitted successfully.</p>
 
 <div class="actions">
@@ -232,34 +268,26 @@ SUBMITTED STATE
 </div>
 </section>
 
-<!-- =========================
-LOADING STATE
-========================= -->
+<!-- LOADING -->
 <section id="loading-state" class="hidden">
 <h1>Loading...</h1>
 <div class="loading-spinner"></div>
 <p class="loading-text">Processing your request</p>
 </section>
 
-<!-- =========================
-ERROR STATE
-========================= -->
+<!-- ERROR -->
 <section id="state-error" class="hidden">
 <h1>Error</h1>
 <p>Something went wrong.</p>
 </section>
 
-<!-- =========================
-UNKNOWN STATE
-========================= -->
+<!-- UNKNOWN -->
 <section id="unknown-state" class="hidden">
 <h1>Invalid Page</h1>
 <p>The requested state was not found.</p>
 </section>
 
-<!-- =========================
-STATE CONTROLLER
-========================= -->
+<!-- SCRIPT -->
 <script>
 function hideAll() {
   document.querySelectorAll("section").forEach(s => s.classList.add("hidden"));
