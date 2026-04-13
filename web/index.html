@@ -121,7 +121,7 @@ section {
 LANDING PAGE
 ========================= -->
 <section id="landing-state">
-  <h1>AI Automations Engineering</h1>
+  <h1>AI Automations Headquarters</h1>
 
   <p>
     Choose how you want to interact with the system.
@@ -153,9 +153,11 @@ FORM STATE (your existing UI)
 
 <label for="ticketTitle">Ticket Title</label>
 <input id="ticketTitle" name="ticketTitle" type="text" required />
+<div class="error" data-error-for="ticketTitle"></div>
 
 <label for="ticketDescription">Ticket Description</label>
 <textarea id="ticketDescription" name="ticketDescription" required></textarea>
+<div class="error" data-error-for="ticketDescription"></div>
 
 <label for="ticketType">Ticket Type</label>
 <select id="ticketType" name="ticketType" required>
@@ -166,6 +168,7 @@ FORM STATE (your existing UI)
 <option>Story</option>
 <option>Epic</option>
 </select>
+<div class="error" data-error-for="ticketType"></div>
 
 <label for="ticketImpact">Ticket Impact</label>
 <select id="ticketImpact" name="ticketImpact" required>
@@ -175,21 +178,25 @@ FORM STATE (your existing UI)
 <option>Minor</option>
 <option>Internal</option>
 </select>
+<div class="error" data-error-for="ticketImpact"></div>
 
 <label for="assigneeTeam">Assignee Team</label>
 <select id="assigneeTeam" name="assigneeTeam" required>
 <option value="">Select…</option>
 <option>Captains of the World</option>
 </select>
+<div class="error" data-error-for="assigneeTeam"></div>
 
 <label for="assignee">Assignee</label>
 <select id="assignee" name="assignee" required>
 <option value="">Select…</option>
 <option>Edrees Saied</option>
 </select>
+<div class="error" data-error-for="assignee"></div>
 
 <label for="userEmail">Your Email Address</label>
 <input id="userEmail" name="userEmail" type="email" required />
+<div class="error" data-error-for="userEmail"></div>
 
 <label for="aiTicketDrafterEnabled">AI Enhance?</label>
 <select id="aiTicketDrafterEnabled" name="aiTicketDrafterEnabled" required>
@@ -197,6 +204,7 @@ FORM STATE (your existing UI)
 <option>Yes</option>
 <option>No</option>
 </select>
+<div class="error" data-error-for="aiTicketDrafterEnabled"></div>
 
 <div class="actions">
   <button type="button" class="btn navy" onclick="showLanding()">
