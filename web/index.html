@@ -67,7 +67,8 @@ input, select, textarea {
 
 textarea {
   min-height: 180px;
-  resize: vertical;
+  resize: none;
+  overflow: hidden;
 }
 
 /* ===== Buttons ===== */
@@ -320,6 +321,39 @@ function showError() {
 
 window.addEventListener("DOMContentLoaded", () => {
   showLanding();
+});
+
+const MAX_HEIGHT = 420;
+
+function autoResizeTextarea(el) {
+  el.style.height = "auto";
+
+  const newHeight = Math.min(el.scrollHeight, MAX_HEIGHT);
+  el.style.height = newHeight + "px";
+
+  // Optional: enable scroll only after max height
+  if (el.scrollHeight > MAX_HEIGHT) {
+    el.style.overflowY = "auto";
+  } else {
+    el.style.overflowY = "hidden";
+  }
+}
+
+window.addEventListener("DOMContentLoaded", () => {
+  showLanding();
+
+  const textarea = document.getElementById("ticketDescription");
+
+  if (!textarea) return;
+
+  // smooth behavior
+  textarea.style.transition = "height 0.12s ease";
+
+  textarea.addEventListener("input", () => autoResizeTextarea(textarea));
+  textarea.addEventListener("focus", () => autoResizeTextarea(textarea));
+
+  // initialize correctly (important if form opens already filled later)
+  autoResizeTextarea(textarea);
 });
 </script>
 
