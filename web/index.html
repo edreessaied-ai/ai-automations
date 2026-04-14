@@ -6,9 +6,9 @@
 <title>AI Automations Engineering</title>
 
 <style>
-
-/* ===== Page Base ===== */
-
+/* =========================
+   BASE STYLES
+========================= */
 body {
   font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   max-width: 600px;
@@ -40,11 +40,10 @@ section {
   box-shadow: 0 12px 28px rgba(0,0,0,0.08);
 }
 
-/* ===== Form Styling (FIX ADDED) ===== */
-
-form {
-  margin-top: 32px;
-}
+/* =========================
+   FORM STYLES
+========================= */
+form { margin-top: 32px; }
 
 label {
   display: block;
@@ -68,11 +67,12 @@ input, select, textarea {
 textarea {
   min-height: 180px;
   resize: none;
-  overflow: hidden;
+  overflow: hidden; /* controlled via JS auto-resize */
 }
 
-/* ===== Buttons ===== */
-
+/* =========================
+   BUTTONS
+========================= */
 .btn {
   display: inline-block;
   margin-top: 18px;
@@ -88,22 +88,9 @@ textarea {
 
 .btn:hover { transform: translateY(-1px); }
 
-.btn.navy {
-  background-color: #0a2540;
-  color: #fff;
-}
-
-.btn.pine {
-  background-color: #1f7a63;
-  color: #fff;
-}
-
-.btn.lead {
-  background-color: #1f7a63;
-  color: #fff;
-}
-
-/* ===== Layout ===== */
+.btn.navy { background-color: #0a2540; color: #fff; }
+.btn.pine { background-color: #1f7a63; color: #fff; }
+.btn.lead { background-color: #1f7a63; color: #fff; }
 
 .actions {
   text-align: center;
@@ -113,8 +100,9 @@ textarea {
   margin-top: 24px;
 }
 
-/* ===== Validation ===== */
-
+/* =========================
+   VALIDATION + STATES
+========================= */
 .error {
   color: #b91c1c;
   font-size: 14px;
@@ -126,14 +114,11 @@ textarea {
   background-color: #fff5f5;
 }
 
-/* ===== Hidden State ===== */
+.hidden { display: none; }
 
-.hidden {
-  display: none;
-}
-
-/* ===== Loading Spinner ===== */
-
+/* =========================
+   LOADING SPINNER
+========================= */
 .loading-spinner {
   margin: 30px auto 12px;
   width: 44px;
@@ -153,7 +138,6 @@ textarea {
   color: #5a4a32;
   text-align: center;
 }
-
 </style>
 
 <link rel="icon" href="src/form.png" type="image/png">
@@ -161,34 +145,33 @@ textarea {
 
 <body>
 
-<!-- LANDING -->
+<!-- =========================
+     LANDING PAGE (DEFAULT VIEW)
+========================= -->
 <section id="landing-state">
   <h1>AI Automations Headquarters</h1>
+  <p>Choose how you want to interact with the system.</p>
 
-  <p>
-    Choose how you want to interact with the system.
-  </p>
-
+  <!-- These use SPA navigation (NO page reload) -->
   <div class="actions">
-    <a class="btn navy" href="/form">
-      Create Ticket
-    </a>
-
-    <a class="btn pine" href="/slack">
-      Slack Assistant
-    </a>
-
-    <a class="btn lead" href="/api">
-      API Access
-    </a>
+    <a class="btn navy" onclick="navigate('/form')">Create Ticket</a>
+    <a class="btn pine" onclick="navigate('/slack')">Slack Assistant</a>
+    <a class="btn lead" onclick="navigate('/api')">API Access</a>
   </div>
 </section>
 
-<!-- FORM -->
+<!-- =========================
+     FORM STATE (MAIN FEATURE)
+========================= -->
 <section id="form-state" class="hidden">
 <h1>Jira Ticket Drafter</h1>
 <p>Fill out the form below to generate a Jira ticket draft.</p>
 
+<!-- IMPORTANT:
+     Form structure must remain stable because:
+     - TS scripts depend on IDs
+     - backend webhook expects these fields
+-->
 <form method="POST" action="https://edreessaied.app.n8n.cloud/webhook/jira-ticket-drafter/">
 
 <label for="ticketTitle">Ticket Title</label>
@@ -247,117 +230,45 @@ textarea {
 <div class="error" data-error-for="aiTicketDrafterEnabled"></div>
 
 <div class="actions">
-  <button type="button" class="btn navy" onclick="showLanding()">
-    ← Back
-  </button>
-  <button type="submit" class="btn lead">
-    Generate Draft
-  </button>
+  <button type="button" class="btn navy" data-nav="/">Back</button>
+  <button type="submit" class="btn lead">Generate Draft</button>
 </div>
 
 </form>
 </section>
 
-<!-- SUBMITTED -->
+<!-- =========================
+     OTHER STATES
+========================= -->
 <section id="state-submitted" class="hidden">
 <h1>Form Submitted!</h1>
 <p>Your form has been submitted successfully.</p>
-
-<div class="actions">
-<a class="btn navy" onclick="showForm()">Edit Form</a>
-<a class="btn pine" onclick="showLanding()">Home</a>
-</div>
 </section>
 
-<!-- LOADING -->
 <section id="loading-state" class="hidden">
 <h1>Loading...</h1>
 <div class="loading-spinner"></div>
 <p class="loading-text">Processing your request</p>
 </section>
 
-<!-- ERROR -->
 <section id="state-error" class="hidden">
 <h1>Error</h1>
 <p>Something went wrong.</p>
 </section>
 
-<!-- UNKNOWN -->
 <section id="unknown-state" class="hidden">
 <h1>Invalid Page</h1>
 <p>The requested state was not found.</p>
 </section>
 
-<!-- SCRIPT -->
-<script>
-function hideAll() {
-  document.querySelectorAll("section").forEach(s => s.classList.add("hidden"));
-}
+<!-- =========================
+  UI LOGIC
+========================= -->
+<script type="module" src="./dist/main.js"></script>
 
-function showLanding() {
-  hideAll();
-  document.getElementById("landing-state").classList.remove("hidden");
-}
-
-function showForm() {
-  hideAll();
-  document.getElementById("form-state").classList.remove("hidden");
-}
-
-function showSubmitted() {
-  hideAll();
-  document.getElementById("state-submitted").classList.remove("hidden");
-}
-
-function showLoading() {
-  hideAll();
-  document.getElementById("loading-state").classList.remove("hidden");
-}
-
-function showError() {
-  hideAll();
-  document.getElementById("state-error").classList.remove("hidden");
-}
-
-window.addEventListener("DOMContentLoaded", () => {
-  showLanding();
-});
-
-const MAX_HEIGHT = 420;
-
-function autoResizeTextarea(el) {
-  el.style.height = "auto";
-
-  const newHeight = Math.min(el.scrollHeight, MAX_HEIGHT);
-  el.style.height = newHeight + "px";
-
-  // Optional: enable scroll only after max height
-  if (el.scrollHeight > MAX_HEIGHT) {
-    el.style.overflowY = "auto";
-  } else {
-    el.style.overflowY = "hidden";
-  }
-}
-
-window.addEventListener("DOMContentLoaded", () => {
-  showLanding();
-
-  const textarea = document.getElementById("ticketDescription");
-
-  if (!textarea) return;
-
-  // smooth behavior
-  textarea.style.transition = "height 0.12s ease";
-
-  textarea.addEventListener("input", () => autoResizeTextarea(textarea));
-  textarea.addEventListener("focus", () => autoResizeTextarea(textarea));
-
-  // initialize correctly (important if form opens already filled later)
-  autoResizeTextarea(textarea);
-});
-</script>
-<script type="module" src="./dist/form_interceptor.js"></script>
-<script type="module" src="./dist/ticket_drafter.js"></script>
+<a class="btn navy" data-nav="/form">Create Ticket</a>
+<a class="btn pine" data-nav="/slack">Slack Assistant</a>
+<a class="btn lead" data-nav="/api">API Access</a>
 
 </body>
 </html>
