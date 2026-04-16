@@ -56,3 +56,16 @@ export function showUnknown() {
   hideAll();
   document.getElementById("unknown-state")?.classList.remove("hidden");
 }
+
+
+export function showSubmitted(): void {
+  hideAll();
+
+  const section = document.getElementById("state-submitted");
+  if (!section) {
+    console.warn("showSubmitted: section not found");
+    return;
+  }
+
+  section.classList.remove("hidden");
+}

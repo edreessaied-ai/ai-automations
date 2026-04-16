@@ -3,7 +3,8 @@
 */
 import { registerRoute, initRouter, registerNotFound, navigate } from "./router.js";
 import { mountForm } from "./form.js";
-import { showLanding, showForm, showSlack, showAPI, showUnknown } from "./views.js";
+import { showLanding, showForm, showSlack, showAPI, showUnknown, showSubmitted } from "./views.js";
+import { mountFormInterceptor } from "./form_interceptor.js";
 
 
 (window as any).navigate = navigate;
@@ -27,6 +28,16 @@ registerRoute("/", showLanding);
 registerRoute("/form", () => {
   showForm();
   mountForm();
+});
+
+registerRoute("/form", () => {
+  showForm();
+  mountForm();
+  mountFormInterceptor();
+});
+
+registerRoute("/form/submitted", () => {
+  showSubmitted();
 });
 
 registerRoute("/slack", showSlack);

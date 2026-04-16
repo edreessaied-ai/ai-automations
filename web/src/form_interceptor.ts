@@ -1,37 +1,51 @@
 /*
-    Intercept form submission and validate the schema.
-    If invalid -> show errors and prevent form submission.
-    If valid -> allow form submission to proceed as normal.
- */
+  Intercept form submission and validate the schema.
+
+  SPA-compatible version:
+  - Mounted explicitly via mountFormInterceptor()
+  - Uses router navigation instead of full page reload
+  - Namespaced under /form/*
+*/
 
 import { retry_wrapper } from "./retry_util.js";
 import { validateTicketDraftData } from "./ticket_schema.js";
 import {
-  FRONTEND_FORM_LINK,
   MissingDataError,
   TicketDraftSubmissionError,
   showPageState,
   clearErrors,
 } from "./ticket_drafter_util.js";
+import { navigate } from "./router.js";
 
-const form = document.querySelector("form") as HTMLFormElement;
+let isMounted = false;
 
-form.addEventListener("submit", async (e: Event) => {
-  // Prevent default form submission behavior to allow for validation and custom handling
-  // If validation succeeds, we will manually submit the form after validation. If it fails, we will show errors and not submit.
-  // This is done to provide a better user experience by not submitting the form until we are sure the data is valid.
+export function mountFormInterceptor(): void {
+  if (isMounted) return;
+  isMounted = true;
+
+  const form = document.querySelector("#form-state form") as HTMLFormElement | null;
+  if (!form) {
+    console.warn("mountFormInterceptor: form not found");
+    return;
+  }
+
+  form.addEventListener("submit", handleSubmit);
+}
+
+async function handleSubmit(e: Event) {
   e.preventDefault();
+
+  const form = e.currentTarget as HTMLFormElement;
 
   showPageState("loading-state");
   clearErrors();
 
-  // Get the edit token from the URL if it exists
+  // Extract editToken from URL
   const params = new URLSearchParams(window.location.search);
-
-  // If there's an edit token, set it in the form so the backend knows this is an edit request
   let editToken: string | undefined = params.get("editToken") ?? undefined;
+
   if (editToken) {
-    const editTokenEl = document.querySelector("#editToken") as HTMLInputElement;
+    const editTokenEl = document.querySelector("#editToken") as HTMLInputElement | null;
     if (editTokenEl) editTokenEl.value = editToken;
   }
 
@@ -39,41 +53,42 @@ form.addEventListener("submit", async (e: Event) => {
   const payload: Record<string, string> =
     Object.fromEntries(formData.entries()) as any;
 
-  // Frontend validation
+  // Frontend validation (throws if invalid)
   validateTicketDraftData([payload as any]);
 
-  // Submit the form data to the backend and handle errors
   try {
     async function submitForm() {
       const response = await fetch(form.action, {
         method: form.method,
         headers: {
-            "Content-Type": "application/json",
+          "Content-Type": "application/json",
         },
         body: JSON.stringify(payload),
       });
+
       if (!response.ok) {
-          throw new TicketDraftSubmissionError(`Form submission failed with status ${response.status}: ${response.statusText}`);
+        throw new TicketDraftSubmissionError(
+          `Form submission failed with status ${response.status}: ${response.statusText}`
+        );
       }
-      // Extract edit token from the response
-      let formResponseData = await response.json();
-      if (!formResponseData?.editToken) {
-          throw new MissingDataError("Missing editToken in response");
+
+      const data = await response.json();
+
+      if (!data?.editToken) {
+        throw new MissingDataError("Missing editToken in response");
       }
-      return formResponseData.editToken;
+
+      return data.editToken;
     }
+
     editToken = await retry_wrapper(() => submitForm(), { retries: 30 });
 
-    // If submission is successful, redirect to the submitted page with the edit token
-    const redirectToSubmittedPageURL = new URL(FRONTEND_FORM_LINK);
-    redirectToSubmittedPageURL.searchParams.set("state", "submitted");
-    if (editToken) {
-      redirectToSubmittedPageURL.searchParams.set("editToken", editToken);
-    }
-    window.location.href = redirectToSubmittedPageURL.toString();
+    // SPA navigation within /form namespace
+    const query = editToken ? `?editToken=${editToken}` : "";
+    navigate(`/form/submitted${query}`);
+
   } catch (err) {
     console.error("Form submission failed:", err);
     showPageState("state-error");
-    return;
   }
-});
+}
