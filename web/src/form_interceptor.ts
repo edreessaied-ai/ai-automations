@@ -5,14 +5,13 @@
  */
 
 import { retry_wrapper } from "./retry_util.js";
-import { TicketDraftData, validateTicketDraftData } from "./ticket_schema.js";
+import { validateTicketDraftData } from "./ticket_schema.js";
 import {
   FRONTEND_FORM_LINK,
   MissingDataError,
   TicketDraftSubmissionError,
   showPageState,
   clearErrors,
-  showErrors 
 } from "./ticket_drafter_util.js";
 
 const form = document.querySelector("form") as HTMLFormElement;
