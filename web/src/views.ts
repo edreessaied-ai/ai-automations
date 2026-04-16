@@ -1,6 +1,7 @@
 /*
   This file contains functions to manage the visibility of different sections of the UI.
 */
+import { navigate } from "./router.js";
 
 
 export function hideAll() {
@@ -58,7 +59,7 @@ export function showUnknown() {
 }
 
 
-export function showSubmitted(): void {
+export function showFormSubmitted(): void {
   hideAll();
 
   const section = document.getElementById("state-submitted");
@@ -68,4 +69,29 @@ export function showSubmitted(): void {
   }
 
   section.classList.remove("hidden");
+}
+
+export function mountFormSubmittedView(): void {
+  const editBtn = document.getElementById("edit-button");
+  const newFormBtn = document.getElementById("new-form-button");
+
+  if (editBtn) {
+    editBtn.addEventListener("click", () => {
+      const params = new URLSearchParams(window.location.search);
+      const editToken = params.get("editToken");
+
+      if (!editToken) {
+        console.warn("No editToken found");
+        return;
+      }
+
+      navigate(`/form?editToken=${editToken}`);
+    });
+  }
+
+  if (newFormBtn) {
+    newFormBtn.addEventListener("click", () => {
+      navigate("/form");
+    });
+  }
 }
