@@ -152,11 +152,10 @@ textarea {
   <h1>AI Automations Headquarters</h1>
   <p>Choose how you want to interact with the system.</p>
 
-  <!-- These use SPA navigation (NO page reload) -->
   <div class="actions">
-    <a class="btn navy" onclick="navigate('/form')">Create Ticket</a>
-    <a class="btn pine" onclick="navigate('/slack')">Slack Assistant</a>
-    <a class="btn lead" onclick="navigate('/api')">API Access</a>
+    <a class="btn navy" href="/form" data-nav="/form">Create Ticket</a>
+    <a class="btn pine" href="/slack" data-nav="/slack">Slack Assistant</a>
+    <a class="btn lead" href="/api" data-nav="/api">API Access</a>
   </div>
 </section>
 
@@ -265,10 +264,6 @@ textarea {
   UI LOGIC
 ========================= -->
 <script type="module" src="./dist/main.js"></script>
-
-<a class="btn navy" data-nav="/form">Create Ticket</a>
-<a class="btn pine" data-nav="/slack">Slack Assistant</a>
-<a class="btn lead" data-nav="/api">API Access</a>
 
 </body>
 </html>
