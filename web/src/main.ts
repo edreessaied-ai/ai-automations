@@ -33,10 +33,6 @@ window.addEventListener("DOMContentLoaded", () => {
 
 registerRoute("/", showLanding);
 
-registerRoute("/form", () => {
-  showForm();
-  mountForm();
-});
 
 registerRoute("/form", () => {
   showForm();
