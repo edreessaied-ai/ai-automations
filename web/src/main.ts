@@ -8,8 +8,6 @@ import { showLanding, showForm, showSlack, showAPI, showUnknown } from "./views"
 
 (window as any).navigate = navigate;
 
-import { navigate } from "./router";
-
 function attachNavigation() {
   document.querySelectorAll<HTMLElement>("[data-nav]").forEach(el => {
     el.addEventListener("click", (e) => {
