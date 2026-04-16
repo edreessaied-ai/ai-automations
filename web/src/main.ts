@@ -8,15 +8,21 @@ import { showLanding, showForm, showSlack, showAPI, showUnknown } from "./views"
 
 (window as any).navigate = navigate;
 
+import { navigate } from "./router";
+
 function attachNavigation() {
   document.querySelectorAll<HTMLElement>("[data-nav]").forEach(el => {
     el.addEventListener("click", (e) => {
-      e.preventDefault();
+      e.preventDefault(); // critical
       const path = el.dataset.nav;
       if (path) navigate(path);
     });
   });
 }
+
+window.addEventListener("DOMContentLoaded", () => {
+  attachNavigation();
+});
 
 registerRoute("/", showLanding);
 
@@ -31,7 +37,3 @@ registerRoute("/api", showAPI);
 registerNotFound(showUnknown);
 
 initRouter();
-
-window.addEventListener("DOMContentLoaded", () => {
-  attachNavigation();
-});
