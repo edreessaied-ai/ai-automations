@@ -6,7 +6,6 @@ import { mountForm } from "./form.js";
 import { 
   showLanding,
   showForm,
-  showSlack,
   showAPI,
   showUnknown,
   showFormSubmitted,
@@ -45,7 +44,6 @@ registerRoute("/form/submitted", () => {
   mountFormSubmittedView();
 });
 
-registerRoute("/slack", showSlack);
 registerRoute("/api", showAPI);
 
 registerNotFound(showUnknown);

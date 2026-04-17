@@ -35,15 +35,6 @@ export function showForm() {
 }
 
 
-export function showSlack() {
-  /*
-    Show the Slack integration section and hide all others.
-  */
-  hideAll();
-  document.getElementById("slack-state")?.classList.remove("hidden");
-}
-
-
 export function showAPI(): void {
   /*
     Show the API documentation section and hide all others.
