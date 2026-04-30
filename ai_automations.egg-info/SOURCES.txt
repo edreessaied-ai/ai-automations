@@ -16,4 +16,4 @@ tests/agents/test_ticket_agent.py
 utilities/__init__.py
 utilities/logger.py
 utilities/ticket_util.py
-utilities/type_util.py
+utilities/types.py

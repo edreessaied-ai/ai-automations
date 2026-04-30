@@ -20,10 +20,12 @@ Key Design Principles:
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+from requests import Request
 
-from api.services.jira_service import JiraService
+# from api.services.jira_service import JiraService
 from api.services.ticket_service import TicketService
-from utilities.ticket_util import Ticket
+from domain.ticket.models import Ticket
+from utilities import logger
 
 # -------------------------
 # App Initialization
@@ -43,6 +45,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+ticket_api_logger = logger.get_logger("ticket_api")
 
 # -------------------------
 # Domain Context
@@ -163,12 +166,14 @@ class CreateTicketResponse(BaseModel):
 # -------------------------
 
 ticket_service = TicketService()
-jira_service = JiraService()
 
 
-# -------------------------
-# Endpoints
-# -------------------------
+async def parse_request(request: Request) -> Ticket:
+    """
+    Unpacks data from ticket request
+    """
+    ticket_request_data = await request.form()
+    return ticket_request_data.get("text")
 
 
 @app.post(
@@ -176,7 +181,7 @@ jira_service = JiraService()
     response_model=TicketResponse,
     summary="Generate a new ticket",
 )
-async def generate_ticket(req: GenerateTicketRequest) -> TicketResponse:
+async def generate_ticket(request: Request) -> Ticket:
     """
     Generate a structured ticket from unstructured user input.
 
@@ -185,17 +190,17 @@ async def generate_ticket(req: GenerateTicketRequest) -> TicketResponse:
 
     Used as the first step in the ticket lifecycle.
     """
-
-    ticket = ticket_service.generate(req.user_input)
-
-    context = TicketContext(
-        user_id="unknown",
-        channel_id="unknown",
-        message_ts="unknown",
-        ticket=ticket,
+    ticket_api_logger.info(
+        "Received ticket generation request: %s", request.__dict__
     )
-
-    return TicketResponse(context=context)
+    ticket = Ticket(
+        title="Example Ticket Title",
+        description="This is an example ticket "
+        "description generated from user input.",
+        priority="Medium",
+        labels=["example", "generated"],
+    )
+    return ticket
 
 
 @app.post(
@@ -245,45 +250,3 @@ async def edit_ticket(req: EditTicketRequest) -> TicketResponse:
     req.context.ticket = updated_ticket
 
     return TicketResponse(context=req.context)
-
-
-@app.post(
-    "/tickets/create",
-    response_model=CreateTicketResponse,
-    summary="Create Jira ticket",
-)
-async def create_ticket(req: CreateTicketRequest) -> CreateTicketResponse:
-    """
-    Create a Jira issue from the current ticket draft.
-
-    This is the final step in the workflow where the AI-generated
-    ticket is persisted into Jira.
-
-    Returns the created issue ID and URL.
-    """
-
-    jira_id, jira_url = jira_service.create_ticket(
-        req.context.ticket,
-        req.project_key,
-    )
-
-    return CreateTicketResponse(
-        jira_ticket_id=jira_id,
-        jira_url=jira_url,
-    )
-
-
-# -------------------------
-# Health Check
-# -------------------------
-
-
-@app.get(
-    "/",
-    summary="Health check",
-)
-def root() -> dict[str, str]:
-    """
-    Basic health check endpoint to verify API availability.
-    """
-    return {"message": "API is running"}

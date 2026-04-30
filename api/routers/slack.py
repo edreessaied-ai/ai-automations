@@ -1,143 +1,157 @@
 """
 Slack router for handling Slack-related API endpoints.
 """
-import json
+from collections.abc import Callable
 
-from fastapi import APIRouter, HTTPException, Request
-from pydantic import BaseModel
+import httpx
+from fastapi import APIRouter, BackgroundTasks, FastAPI, Request
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
-from api.routers.ticket import (
-    GenerateTicketRequest,
-    ImproveTicketRequest,
-    TicketContext,
-    TicketResponse,
-    generate_ticket,
-    improve_ticket,
+import integrations.slack.models as slack_models
+from domain.ticket.pipeline import send_ticket_request_to_llm
+from utilities.exceptions import SlackUnknownCommandError
+from utilities.logger import get_logger
+from utilities.types import (
+    URLStr,
 )
+
+logger = get_logger(__name__)
 
 slack_router = APIRouter(prefix="/slack", tags=["slack"])
 
+# Application instance
+app = FastAPI(title="AI Automations Slack API")
 
-# -------------------------
-# Slack Event Models
-# -------------------------
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
-class SlackEvent(BaseModel):
+slack_command_names = [e.value for e in slack_models.SlackRequestType]
+
+def normalize_slack_command(slack_command_str: str) -> str:
     """
-    Model for Slack Events API payloads (simplified for message events).
+    Normalize the incoming Slack command by
+    stripping leading/trailing slash
     """
-    user: str | None = None
-    text: str | None = None
+    return slack_command_str.lstrip("/")
 
 
-class SlackCommand(BaseModel):
-    text: str
-    user_id: str
-
-
-# -------------------------
-# Helpers
-# -------------------------
-
-def build_context(user_id: str, channel_id: str, message_ts: str, ticket):
+def build_slack_command_request(
+    payload: slack_models.UnnormalizedSlackRequest
+) -> slack_models.NormalizedSlackCommandRequest:
     """
-    Build a TicketContext from Slack event data.
+    Convert raw Slack payload → internal request model.
     """
-    return TicketContext(
-        user_id=user_id,
-        channel_id=channel_id,
-        message_ts=message_ts,
-        ticket=ticket,
+    command = payload.get("command")
+    normalized_command = normalize_slack_command(command)
+    return slack_models.NormalizedSlackCommandRequest(
+        intent=normalized_command,
+        text=payload.get("text"),
+        user_id=payload.get("user_id"),
+        channel_id=payload.get("channel_id"),
+        response_url=payload.get("response_url"),
+        thread_ts=payload.get("thread_ts"),
     )
 
 
-# -------------------------
-# Slack Event Endpoint
-# -------------------------
-
-@slack_router.post("/events")
-async def slack_events(payload: SlackEvent):
+async def send_response_to_slack(
+    response_url: URLStr,
+    payload: slack_models.SlackResponsePayload
+) -> None:
     """
-    Handle Slack Events API (message events, etc.)
+    Send a response back to Slack using the provided response URL.
     """
-
-    if payload.type != "message" or not payload.text:
-        return {"ok": True}
-
-    # Example trigger: simple keyword
-    if "ticket" in payload.text.lower():
-        req = GenerateTicketRequest(user_input=payload.text)
-
-        result: TicketResponse = await generate_ticket(req)
-
-        return {
-            "ok": True,
-            "message": "Ticket generated",
-            "context": result.context.model_dump(),
-        }
-
-    return {"ok": True}
+    async with httpx.AsyncClient() as client:
+        await client.post(response_url, json=payload)
 
 
-# -------------------------
-# Slack Slash Command
-# -------------------------
-
-@slack_router.post("/commands")
-async def slack_commands(cmd: SlackCommand):
+async def slack_intent_handler(
+    slack_command_request: slack_models.NormalizedSlackCommandRequest
+) -> None:
     """
-    Handle Slack slash commands like /ticket
+    Handler for routing Slack commands to the appropriate function.
     """
-
-    text = cmd.text.strip()
-
-    if cmd.command == "/ticket":
-        req = GenerateTicketRequest(user_input=text)
-
-        result: TicketResponse = await generate_ticket(req)
-
-        return {
-            "response_type": "in_channel",
-            "text": "🧾 Ticket generated",
-            "ticket": result.context.ticket.model_dump(),
-        }
-
-    if cmd.command == "/ticket-improve":
-        # minimal context example (you’ll likely hydrate from DB later)
-        context = build_context(
-            user_id=cmd.user_id,
-            channel_id=cmd.channel_id,
-            message_ts=cmd.response_url,  # placeholder
-            ticket=None,  # replace with stored ticket later
+    request_handler = slack_intent_to_api_handler.get(
+        slack_command_request.intent
+    )
+    if not request_handler:
+        raise SlackUnknownCommandError(
+            f"No handler defined for command: "
+            f"{slack_command_request.intent}"
         )
-
-        req = ImproveTicketRequest(context=context)
-        result = await improve_ticket(req)
-
-        return {
-            "response_type": "ephemeral",
-            "text": "✨ Ticket improved",
-            "ticket": result.context.ticket.model_dump(),
-        }
-
-    raise HTTPException(status_code=400, detail="Unknown Slack command")
+    slack_response = await request_handler(slack_command_request)
+    await send_response_to_slack(
+        slack_command_request.response_url,
+        slack_response
+    )
 
 
-# -------------------------
-# Slack Action Endpoint (future use)
-# -------------------------
-
-@slack_router.post("/actions")
-async def slack_actions(request: Request):
+async def ticket_creation_handler(
+    slack_command_request: slack_models.NormalizedSlackCommandRequest
+) -> slack_models.SlackResponsePayload:
     """
-    Handle interactive Slack components (buttons, modals, etc.)
+    Handler for ticket-related Slack commands.
     """
-    payload = await request.form()
+    ticket_intent = send_ticket_request_to_llm(
+        user_prompt=slack_command_request.text,
+    )
+    logger.info(ticket_intent)
+    # Build a Slack message with the ticket intent
+    # and return it as a Slack response
+    slack_message = slack_models.SlackMessage(
+        text=ticket_intent.to_string(),
+    )
+    return slack_message.to_slack_response()
 
-    # Slack sends JSON inside "payload"
-    data = json.loads(payload.get("payload", "{}"))
 
-    return {
-        "ok": True,
-        "type": data.get("type"),
+# Map of Slack intents to their corresponding API handlers
+slack_intent_to_api_handler: dict[
+    slack_models.SlackRequestType,
+    Callable[
+        [slack_models.NormalizedSlackCommandRequest],
+        slack_models.SlackResponsePayload]
+    ] = {
+        slack_models.SlackRequestType.CREATE_TICKET: ticket_creation_handler
     }
+
+@app.post("/slack/commands")
+async def slack_commands(
+    request: Request,
+    background_tasks_manager: BackgroundTasks
+) -> JSONResponse:
+    """
+    Endpoint to receive Slack slash commands.
+    """
+    slack_payload = await request.form()
+    try:
+        # Handle the Slack command
+        slack_command_request = build_slack_command_request(
+            slack_payload
+        )
+        # Add the command handler to background tasks
+        # so that we can respond to Slack immediately
+        background_tasks_manager.add_task(
+            slack_intent_handler,
+            slack_command_request
+        )
+        # Immediate acknowledgement to Slack
+        return JSONResponse(
+            {
+                "response_type": "ephemeral",
+                "text": "Got it — working on your request."
+            }
+        )
+    except SlackUnknownCommandError as e:
+        return JSONResponse(
+            {
+                "response_type": "ephemeral",
+                "text":
+                    f"Error: {str(e)}; please use one of the "
+                    f"following commands: "
+                    f"{', '.join(slack_command_names)}",
+            }
+        )

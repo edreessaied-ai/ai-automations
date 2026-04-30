@@ -10,7 +10,7 @@ import logging
 from datetime import datetime
 from pathlib import Path
 
-from utilities.type_util import Json
+from utilities.types import Json
 
 # Cache of active loggers per timestamp
 timestamp_to_logger_cache: dict[str, logging.Logger] = {}

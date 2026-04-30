@@ -14,10 +14,10 @@ from the rest of the application.
 
 import requests
 
+from domain.ticket.models import Ticket
 from utilities.constants import JIRA_TRANSACTION_TIMEOUT
 from utilities.retry_util import retry
-from utilities.ticket_util import Ticket
-from utilities.type_util import EmailStr, TokenStr, URLStr
+from utilities.types import EmailStr, TokenStr, URLStr
 
 
 class JiraService:

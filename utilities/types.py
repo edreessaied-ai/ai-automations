@@ -17,8 +17,16 @@ AIResponse = object
 
 JsonSchema = dict[str, object]
 
+
 URLStr = str
-
 EmailStr = str
-
 TokenStr = str
+
+# Slack specific types
+SlackTimestampStr = str
+SlackChannelIDStr = str
+SlackUserIDStr = str
+SlackInputTextStr = str
+
+# LLM response types
+JsonLLMResponse = str

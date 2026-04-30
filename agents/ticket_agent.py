@@ -11,9 +11,9 @@ from typing import Any
 
 from openai import OpenAI
 
+from domain.ticket.models import Ticket, pretty_print_ticket
 from utilities.logger import get_logger
-from utilities.ticket_util import Ticket, pretty_print_ticket
-from utilities.type_util import JsonSchema
+from utilities.types import JsonSchema
 
 ticket_agent_logger = get_logger("ticket_agent")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
@@ -79,7 +79,6 @@ TICKET_SCHEMA: JsonSchema = {
         "priority": {"type": "string", "enum": ["Low", "Medium", "High"]},
         "labels": {"type": "array", "items": {"type": "string"}},
     },
-    "required": ["title", "description", "priority", "labels"],
     "additionalProperties": False,
 }
 
@@ -99,7 +98,7 @@ def send_ticket_request_to_llm(user_prompt: str) -> Ticket:
                 "type": "json_schema",
                 "name": "ticket",
                 "schema": TICKET_SCHEMA,
-                "strict": True,
+                "strict": False,
             }
         },
     )

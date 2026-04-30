@@ -17,12 +17,16 @@ This module isolates:
 """
 
 import json
+import os
 from typing import Any
 
 from openai import OpenAI
 
-from utilities.ticket_util import Ticket, pretty_print_ticket
-from utilities.type_util import JsonSchema
+from domain.ticket.models import Ticket, pretty_print_ticket
+from utilities.types import JsonSchema
+
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+OPENAI_CLIENT = OpenAI(api_key=OPENAI_API_KEY)
 
 
 class TicketService:
@@ -31,7 +35,7 @@ class TicketService:
     """
 
     def __init__(
-        self, model: str = "gpt-4.1-mini", api_key: str | None = None
+        self, model: str = "gpt-4.1-mini"
     ) -> None:
         """
         Initialize TicketService.
@@ -41,7 +45,7 @@ class TicketService:
             api_key: Optional API key override. If not provided,
                      environment variable is used by OpenAI client.
         """
-        self.client = OpenAI(api_key=api_key)
+        self.client = OPENAI_CLIENT
         self.model = model
 
     # =========================================================

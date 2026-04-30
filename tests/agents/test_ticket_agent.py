@@ -14,7 +14,7 @@ from hypothesis import given
 from hypothesis import strategies as st
 from pydantic import ValidationError
 
-from utilities.ticket_util import Ticket
+from domain.ticket.models import Ticket
 
 # ----------------------------
 # Base valid inputs
