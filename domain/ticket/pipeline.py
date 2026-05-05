@@ -3,7 +3,7 @@
     converting user input into structured
     tickets using an LLM.
 """
-from domain.ticket.models import TicketIntent
+from domain.ticket.models import TicketIntent, TicketUserPromptText
 from integrations.llm.openai_client import OpenAILLMClient
 
 SYSTEM_PROMPT = """
@@ -68,34 +68,11 @@ def send_ticket_request_to_llm(
     )
 
 
-def format_ticket_intent(intent: TicketIntent) -> str:
+async def create_ticket_intent_from_user_input(
+    user_input: TicketUserPromptText
+) -> TicketIntent:
     """
-    Formats a TicketIntent into a human-readable string.
+    Main pipeline function to create a TicketIntent from user input.
     """
-    sections = ["🎫 *Received Ticket Request*"]
-
-    if intent.title:
-        sections.append(f"*Title:*\n{intent.title}")
-
-    if intent.description:
-        sections.append(f"*Description:*\n{intent.description}")
-
-    if intent.priority:
-        sections.append(f"*Priority:* {intent.priority}")
-
-    if intent.assignee:
-        sections.append(f"*Assignee:* {intent.assignee}")
-
-    if intent.labels:
-        sections.append(f"*Labels:* {', '.join(intent.labels)}")
-
-    if len(sections) == 1:
-        sections.append("_No structured details detected._")
-
-    # 👇 Add confirmation prompt
-    sections.append(
-        "_Does this look correct?_ \n"
-        "Reply with *yes* to confirm or tell me what to change."
-    )
-
-    return "\n\n".join(sections)
+    ticket_intent = send_ticket_request_to_llm(user_input)
+    return ticket_intent

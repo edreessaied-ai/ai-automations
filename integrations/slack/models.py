@@ -25,17 +25,18 @@ class SlackRequestType(StrEnum):
     CREATE_TICKET = "create-ticket"
     IMPROVE_TICKET = "improve-ticket"
     SUMMARIZE_THREAD = "summarize-thread"
+    UNKNOWN_COMMAND = "unknown command"
 
 
 class NormalizedSlackCommandRequest(BaseModel):
     """
     Normalized request from Slack to backend.
     """
-    intent: SlackRequestType
+    intent: SlackRequestType | None
     text: SlackInputTextStr | None
-    user_id: SlackUserIDStr
-    channel_id: SlackChannelIDStr
-    response_url: HttpUrl
+    user_id: SlackUserIDStr | None
+    channel_id: SlackChannelIDStr | None
+    response_url: HttpUrl | None = None
     # Thread timestamp is optional
     # because not all commands will be issued from a thread
     thread_ts: SlackTimestampStr | None

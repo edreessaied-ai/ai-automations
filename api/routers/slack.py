@@ -1,20 +1,17 @@
 """
 Slack router for handling Slack-related API endpoints.
 """
-from collections.abc import Callable
+import os
 
-import httpx
 from fastapi import APIRouter, BackgroundTasks, FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
+from fastapi.templating import Jinja2Templates
 
-import integrations.slack.models as slack_models
-from domain.ticket.pipeline import send_ticket_request_to_llm
-from utilities.exceptions import SlackUnknownCommandError
+import integrations.slack.dispatcher as dispatcher
+import integrations.slack.models as models
+import integrations.slack.parser as parser
 from utilities.logger import get_logger
-from utilities.types import (
-    URLStr,
-)
 
 logger = get_logger(__name__)
 
@@ -30,93 +27,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-slack_command_names = [e.value for e in slack_models.SlackRequestType]
+slack_command_names = [e.value for e in models.SlackRequestType]
 
-def normalize_slack_command(slack_command_str: str) -> str:
-    """
-    Normalize the incoming Slack command by
-    stripping leading/trailing slash
-    """
-    return slack_command_str.lstrip("/")
+templates = Jinja2Templates(directory="templates")
 
-
-def build_slack_command_request(
-    payload: slack_models.UnnormalizedSlackRequest
-) -> slack_models.NormalizedSlackCommandRequest:
-    """
-    Convert raw Slack payload → internal request model.
-    """
-    command = payload.get("command")
-    normalized_command = normalize_slack_command(command)
-    return slack_models.NormalizedSlackCommandRequest(
-        intent=normalized_command,
-        text=payload.get("text"),
-        user_id=payload.get("user_id"),
-        channel_id=payload.get("channel_id"),
-        response_url=payload.get("response_url"),
-        thread_ts=payload.get("thread_ts"),
-    )
-
-
-async def send_response_to_slack(
-    response_url: URLStr,
-    payload: slack_models.SlackResponsePayload
-) -> None:
-    """
-    Send a response back to Slack using the provided response URL.
-    """
-    async with httpx.AsyncClient() as client:
-        await client.post(response_url, json=payload)
-
-
-async def slack_intent_handler(
-    slack_command_request: slack_models.NormalizedSlackCommandRequest
-) -> None:
-    """
-    Handler for routing Slack commands to the appropriate function.
-    """
-    request_handler = slack_intent_to_api_handler.get(
-        slack_command_request.intent
-    )
-    if not request_handler:
-        raise SlackUnknownCommandError(
-            f"No handler defined for command: "
-            f"{slack_command_request.intent}"
-        )
-    slack_response = await request_handler(slack_command_request)
-    await send_response_to_slack(
-        slack_command_request.response_url,
-        slack_response
-    )
-
-
-async def ticket_creation_handler(
-    slack_command_request: slack_models.NormalizedSlackCommandRequest
-) -> slack_models.SlackResponsePayload:
-    """
-    Handler for ticket-related Slack commands.
-    """
-    ticket_intent = send_ticket_request_to_llm(
-        user_prompt=slack_command_request.text,
-    )
-    logger.info(ticket_intent)
-    # Build a Slack message with the ticket intent
-    # and return it as a Slack response
-    slack_message = slack_models.SlackMessage(
-        text=ticket_intent.to_string(),
-    )
-    return slack_message.to_slack_response()
-
-
-# Map of Slack intents to their corresponding API handlers
-slack_intent_to_api_handler: dict[
-    slack_models.SlackRequestType,
-    Callable[
-        [slack_models.NormalizedSlackCommandRequest],
-        slack_models.SlackResponsePayload]
-    ] = {
-        slack_models.SlackRequestType.CREATE_TICKET: ticket_creation_handler
-    }
 
 @app.post("/slack/commands")
 async def slack_commands(
@@ -129,29 +43,54 @@ async def slack_commands(
     slack_payload = await request.form()
     try:
         # Handle the Slack command
-        slack_command_request = build_slack_command_request(
+        slack_command_request = parser.build_slack_command_request(
             slack_payload
         )
         # Add the command handler to background tasks
         # so that we can respond to Slack immediately
         background_tasks_manager.add_task(
-            slack_intent_handler,
+            dispatcher.slack_intent_handler,
             slack_command_request
         )
         # Immediate acknowledgement to Slack
+        ephemeral_response = {
+            "response_type": "ephemeral",
+            "text": "Got it — working on your request."
+        }
+        logger.info(
+            f"Received Slack command: "
+            f"{slack_command_request.intent}; "
+            f"Returning ephemeral acknowledgement to Slack "
+            f"the command is being processed in the background: "
+            f"{ephemeral_response}"
+        )
+        return JSONResponse(ephemeral_response)
+    except Exception as e:  # pylint: disable=broad-except
+        logger.error(f"Error processing Slack command: {e}")
         return JSONResponse(
             {
                 "response_type": "ephemeral",
-                "text": "Got it — working on your request."
+                "text": f"An error occurred while "
+                f"processing your request: {e}",
             }
         )
-    except SlackUnknownCommandError as e:
-        return JSONResponse(
-            {
-                "response_type": "ephemeral",
-                "text":
-                    f"Error: {str(e)}; please use one of the "
-                    f"following commands: "
-                    f"{', '.join(slack_command_names)}",
-            }
-        )
+
+
+@app.get("/", response_class=HTMLResponse)
+def home_page(request: Request):
+    """
+    Simple home page to verify that the API is running.
+    """
+    return templates.TemplateResponse(
+        request,
+        "index.html",
+    )
+
+
+@app.get("/favicon.ico")
+def favicon():
+    """
+    Serve the favicon for the API documentation and home page.
+    """
+    path = os.path.expanduser("~/code/ai-automations/icons/slack_bot_icon.png")
+    return FileResponse(path)

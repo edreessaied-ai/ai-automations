@@ -43,21 +43,25 @@ class OpenAILLMClient:
         prompt and system prompt, and
         return the raw response.
         """
-        return self.client.responses.create(
-            model=GPT_MODEL,
-            input=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": prompt},
-            ],
-            text={
-                "format": {
-                    "type": "json_schema",
-                    "name": data_model.__name__,
-                    "schema": data_model.model_json_schema(),
-                    "strict": True,
-                }
-            },
-        )
+        try:
+            return self.client.responses.create(
+                model=GPT_MODEL,
+                input=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": prompt},
+                ],
+                text={
+                    "format": {
+                        "type": "json_schema",
+                        "name": data_model.__name__,
+                        "schema": data_model.model_json_schema(),
+                        "strict": True,
+                    }
+                },
+            )
+        except Exception as e:
+            logger.error(f"Error calling LLM: {e}")
+            raise
 
     def _extract_llm_json_response(
         self,

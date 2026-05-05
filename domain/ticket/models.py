@@ -3,10 +3,22 @@ Ticket Models - Defines the data structures for representing tickets.
 """
 from typing import Any, Literal
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
+
+# Alias Types
+TicketUserPromptText = str
 
 
-class TicketIntent(BaseModel):
+# Pydantic Models for Ticket Data
+class StrictBaseModel(BaseModel):
+    """
+    Pydantic model with strict validation to ensure
+    that only well-formed data is accepted.
+    """
+    model_config = ConfigDict(extra="forbid")
+
+
+class TicketIntent(StrictBaseModel):
     """
     Represents the intent of a ticket-related action,
     such as creating or improving a ticket.
@@ -44,7 +56,7 @@ class TicketIntent(BaseModel):
         return self.model_dump()
 
 
-class TicketDraft(BaseModel):
+class TicketDraft(StrictBaseModel):
     """
     Represents a draft version of a ticket, which may have optional fields
     """
@@ -55,7 +67,7 @@ class TicketDraft(BaseModel):
     labels: list[str] = []
 
 
-class Ticket(BaseModel):
+class Ticket(StrictBaseModel):
     """
     Uses pydantic model to represent a structured Jira ticket
 
@@ -77,17 +89,6 @@ class Ticket(BaseModel):
     priority: Literal["Low", "Medium", "High"]
     labels: list[str]
 
-    class Config:  # pylint: disable=too-few-public-methods
-        """
-        Pydantic configuration to match JSON schema constraints.
-
-        - `extra = "forbid"` ensures that any additional fields
-        not defined in the model will cause validation to fail,
-        enforcing a strict schema.
-        """
-
-        extra = "forbid"
-
 
 def pretty_print_ticket(ticket: Ticket) -> str:
     """
@@ -100,3 +101,36 @@ def pretty_print_ticket(ticket: Ticket) -> str:
         f"Labels: \n{', '.join(ticket.labels)}\n\n"
         f"Description:\n{ticket.description}"
     )
+
+
+def format_ticket_intent(intent: TicketIntent) -> str:
+    """
+    Formats a TicketIntent into a human-readable string.
+    """
+    sections = ["🎫 *Received Ticket Request*"]
+
+    if intent.title:
+        sections.append(f"*Title:*\n{intent.title}")
+
+    if intent.description:
+        sections.append(f"*Description:*\n{intent.description}")
+
+    if intent.priority:
+        sections.append(f"*Priority:* {intent.priority}")
+
+    if intent.assignee:
+        sections.append(f"*Assignee:* {intent.assignee}")
+
+    if intent.labels:
+        sections.append(f"*Labels:* {', '.join(intent.labels)}")
+
+    if len(sections) == 1:
+        sections.append("_No structured details detected._")
+
+    # 👇 Add confirmation prompt
+    sections.append(
+        "_Does this look correct?_ \n"
+        "Reply with *yes* to confirm or tell me what to change."
+    )
+
+    return "\n\n".join(sections)
