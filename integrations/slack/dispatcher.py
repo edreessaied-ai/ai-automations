@@ -5,9 +5,9 @@ from collections.abc import Callable
 
 import integrations.slack.client as client
 import integrations.slack.models as models
+import utilities.exceptions as exceptions
 import utilities.logger as logger
 from domain.ticket.pipeline import create_ticket_intent_from_user_input
-from utilities.exceptions import SlackUnknownCommandError
 
 log_handler = logger.get_logger(__name__)
 
@@ -40,7 +40,7 @@ async def handle_create_ticket(
     Handler for processing Slack ticket creation requests
     """
     # Process the user input and create a structured ticket intent
-    ticket_intent = create_ticket_intent_from_user_input(
+    ticket_intent = await create_ticket_intent_from_user_input(
         slack_request.text
     )
     # Build a Slack message with the ticket intent
@@ -61,11 +61,14 @@ async def slack_intent_handler(
     """
     Handler for routing Slack commands to the appropriate function.
     """
+    log_handler.info(
+        f"Starting BG Slack Intent Handler for {slack_command_request.intent}"
+    )
     request_handler = slack_command_registry.get(
         slack_command_request.intent
     )
     if not request_handler:
-        raise SlackUnknownCommandError(
+        raise exceptions.SlackUnknownCommandError(
             f"No handler defined for command: "
             f"{slack_command_request.intent}"
         )
@@ -75,3 +78,6 @@ async def slack_intent_handler(
             slack_command_request.response_url,
             slack_response
         )
+    log_handler.info(
+        f"Completed BG Slack Intent Handler for {slack_command_request.intent}"
+    )

@@ -14,7 +14,7 @@ from utilities import logger
 T = TypeVar("T")
 P = ParamSpec("P")
 
-log_manager = logger.get_logger()
+log_handler = logger.get_logger()
 
 
 class RetryException(Exception):
@@ -44,7 +44,7 @@ def retry(
                 break
 
             exc_str = str(exc)
-            log_manager.info(
+            log_handler.info(
                 f"Retrying due to exception: {exc_str}. "
                 f"Retries left: {retry_max_retries - attempt}",
             )

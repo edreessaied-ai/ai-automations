@@ -49,9 +49,9 @@ def get_logger(
     log_file = log_dir / f"{log_name}.log.{timestamp}"
 
     # Create logger
-    logger = logging.getLogger(log_name)
-    logger.setLevel(level)
-    logger.propagate = False  # Prevent duplicate logs
+    log_handler = logging.getLogger(log_name)
+    log_handler.setLevel(level)
+    log_handler.propagate = False  # Prevent duplicate logs
 
     # Formatter
     formatter = logging.Formatter(
@@ -63,19 +63,19 @@ def get_logger(
     file_handler = logging.FileHandler(log_file)
     file_handler.setLevel(level)
     file_handler.setFormatter(formatter)
-    logger.addHandler(file_handler)
+    log_handler.addHandler(file_handler)
 
     # Console handler (optional)
     if write_to_console:
         console_handler = logging.StreamHandler()
         console_handler.setLevel(level)
         console_handler.setFormatter(formatter)
-        logger.addHandler(console_handler)
+        log_handler.addHandler(console_handler)
 
     # Cache it
-    timestamp_to_logger_cache[logger_key] = logger
+    timestamp_to_logger_cache[logger_key] = log_handler
 
-    return logger
+    return log_handler
 
 
 def pretty_print_json(data: Json) -> str:

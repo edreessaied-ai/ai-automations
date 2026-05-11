@@ -21,7 +21,7 @@ OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 OPENAI_CLIENT = OpenAI(api_key=OPENAI_API_KEY)
 
 
-logger = get_logger(__name__)
+log_handler = get_logger(__name__)
 
 
 class OpenAILLMClient:
@@ -60,7 +60,7 @@ class OpenAILLMClient:
                 },
             )
         except Exception as e:
-            logger.error(f"Error calling LLM: {e}")
+            log_handler.error(f"Error calling LLM: {e}")
             raise
 
     def _extract_llm_json_response(
@@ -97,7 +97,7 @@ class OpenAILLMClient:
                 parsed = json.loads(text)
                 return data_model(**parsed)
             except (json.JSONDecodeError, TypeError, ValueError) as e:
-                logger.error(f"Error occurred while parsing JSON: {e}")
+                log_handler.error(f"Error occurred while parsing JSON: {e}")
                 continue
         raise DataTransformationError(
             "Failed to extract structured output"

@@ -33,11 +33,9 @@ class TicketIntent(StrictBaseModel):
         """
         Returns a string representation of the TicketIntent.
         """
-        lines = [
-            f"Received ticket request: {self.title}",
-            "Here's the ticket intent:",
-            ""
-        ]
+        lines = ["Ticket Intent:"]
+        if self.title:
+            lines.append(f" Title: {self.title}")
         if self.description:
             lines.append(f" Description: {self.description}")
         if self.priority:

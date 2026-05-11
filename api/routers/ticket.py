@@ -45,7 +45,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-ticket_api_logger = logger.get_logger("ticket_api")
+log_handler = logger.get_logger("ticket_api")
 
 # -------------------------
 # Domain Context
@@ -190,7 +190,7 @@ async def generate_ticket(request: Request) -> Ticket:
 
     Used as the first step in the ticket lifecycle.
     """
-    ticket_api_logger.info(
+    log_handler.info(
         "Received ticket generation request: %s", request.__dict__
     )
     ticket = Ticket(

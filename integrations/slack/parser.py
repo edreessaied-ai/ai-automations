@@ -5,7 +5,7 @@
 import integrations.slack.models as models
 from utilities.logger import get_logger
 
-logger = get_logger(__name__)
+log_handler = get_logger(__name__)
 
 
 def normalize_slack_command(slack_command_str: str) -> models.SlackRequestType:
@@ -17,7 +17,7 @@ def normalize_slack_command(slack_command_str: str) -> models.SlackRequestType:
     try:
         return models.SlackRequestType(formatted_slack_request)
     except ValueError:
-        logger.error(f"Unknown Slack command: {formatted_slack_request}")
+        log_handler.error(f"Unknown Slack command: {formatted_slack_request}")
         return models.SlackRequestType.UNKNOWN_COMMAND
 
 

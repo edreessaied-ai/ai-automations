@@ -1,23 +1,21 @@
 """
 Slack router for handling Slack-related API endpoints.
 """
+import json
 import os
 
-from fastapi import APIRouter, BackgroundTasks, FastAPI, Request
+from fastapi import BackgroundTasks, FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 
+import integrations.slack.client as client
 import integrations.slack.dispatcher as dispatcher
-import integrations.slack.models as models
 import integrations.slack.parser as parser
 from utilities.logger import get_logger
 
-logger = get_logger(__name__)
+log_handler = get_logger(__name__)
 
-slack_router = APIRouter(prefix="/slack", tags=["slack"])
-
-# Application instance
 app = FastAPI(title="AI Automations Slack API")
 
 app.add_middleware(
@@ -27,9 +25,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-slack_command_names = [e.value for e in models.SlackRequestType]
-
 templates = Jinja2Templates(directory="templates")
+
+# Shared in-memory state
+latest_slack_response = {}
 
 
 @app.post("/slack/commands")
@@ -41,56 +40,111 @@ async def slack_commands(
     Endpoint to receive Slack slash commands.
     """
     slack_payload = await request.form()
+
     try:
-        # Handle the Slack command
-        slack_command_request = parser.build_slack_command_request(
-            slack_payload
+        log_handler.info(
+            "Received Slack payload: %s",
+            dict(slack_payload)
         )
-        # Add the command handler to background tasks
-        # so that we can respond to Slack immediately
+
+        slack_command_request = (
+            parser.build_slack_command_request(
+                slack_payload
+            )
+        )
+
+        log_handler.info(
+            "Built Slack command request: %s",
+            slack_command_request
+        )
+
         background_tasks_manager.add_task(
             dispatcher.slack_intent_handler,
             slack_command_request
         )
-        # Immediate acknowledgement to Slack
-        ephemeral_response = {
-            "response_type": "ephemeral",
-            "text": "Got it — working on your request."
-        }
-        logger.info(
-            f"Received Slack command: "
-            f"{slack_command_request.intent}; "
-            f"Returning ephemeral acknowledgement to Slack "
-            f"the command is being processed in the background: "
-            f"{ephemeral_response}"
+
+        return client.forward_ephemeral_acknowledgement()
+
+    except Exception as error:  # pylint: disable=broad-except
+        log_handler.exception(
+            "Error processing Slack command"
         )
-        return JSONResponse(ephemeral_response)
-    except Exception as e:  # pylint: disable=broad-except
-        logger.error(f"Error processing Slack command: {e}")
-        return JSONResponse(
-            {
-                "response_type": "ephemeral",
-                "text": f"An error occurred while "
-                f"processing your request: {e}",
-            }
+
+        return client.forward_ephemeral_error_message(
+            str(error)
         )
 
 
 @app.get("/", response_class=HTMLResponse)
 def home_page(request: Request):
     """
-    Simple home page to verify that the API is running.
+    Render local Slack simulator UI.
     """
     return templates.TemplateResponse(
-        request,
-        "index.html",
+        request=request,
+        name="index.html",
     )
 
 
 @app.get("/favicon.ico")
 def favicon():
     """
-    Serve the favicon for the API documentation and home page.
+    Serve favicon.
     """
-    path = os.path.expanduser("~/code/ai-automations/icons/slack_bot_icon.png")
+    path = os.path.expanduser(
+        "~/code/ai-automations/icons/slack_bot_icon.png"
+    )
+
     return FileResponse(path)
+
+
+@app.post("/slack-responses")
+async def receive_response(
+    request: Request
+) -> JSONResponse:
+    """
+    Receive async Slack-style response
+    (simulated response_url webhook).
+
+    Stores ONLY the latest response.
+    """
+    log_handler.info(
+        "POST /slack-responses received"
+    )
+
+    client_response = await request.json()
+
+    latest_slack_response.clear()
+    latest_slack_response.update(client_response)
+
+    log_handler.info(
+        "Stored latest Slack response:\n%s",
+        json.dumps(
+            latest_slack_response,
+            indent=2
+        )
+    )
+
+    return JSONResponse(
+        content={
+            "status": "ok",
+            "stored_response": latest_slack_response
+        }
+    )
+
+
+@app.get("/slack-responses")
+async def get_response() -> JSONResponse:
+    """
+    Return latest async Slack response.
+    """
+    log_handler.info(
+        "GET /slack-responses returning:\n%s",
+        json.dumps(
+            latest_slack_response,
+            indent=2
+        )
+    )
+    return JSONResponse(
+        content=latest_slack_response
+    )

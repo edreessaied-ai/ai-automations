@@ -9,3 +9,7 @@ class SlackUnknownCommandError(Exception):
 
 class DataTransformationError(Exception):
     """Exception raised when there is an error in data transformation."""
+
+
+class SlackResponseSendError(Exception):
+    """Raised when sending a response to Slack fails."""

@@ -6,144 +6,503 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
   <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    :root {
+      --bg-dark: #0f172a;
+      --bg-panel: rgba(255,255,255,0.92);
+      --primary: #6366f1;
+      --primary-hover: #7c3aed;
+      --border: #dbe4f0;
+      --text: #0f172a;
+      --muted: #64748b;
+    }
+
     body {
       margin: 0;
-      font-family: system-ui, -apple-system, sans-serif;
-      background: #f4f6f8;
+      min-height: 100vh;
+      font-family: Inter, system-ui, -apple-system, sans-serif;
+      background:
+        radial-gradient(circle at top left, #312e81 0%, transparent 30%),
+        radial-gradient(circle at bottom right, #0f172a 0%, transparent 35%),
+        linear-gradient(135deg, #111827 0%, #1e293b 100%);
+      color: var(--text);
       display: flex;
       justify-content: center;
-      padding: 2rem;
+      padding: 3rem 1.5rem;
     }
 
     .container {
       width: 100%;
-      max-width: 700px;
-      background: white;
-      padding: 2rem;
-      border-radius: 14px;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+      max-width: 900px;
+      background: var(--bg-panel);
+      backdrop-filter: blur(14px);
+      border-radius: 26px;
+      padding: 2.5rem;
+      border: 1px solid rgba(255,255,255,0.2);
+      box-shadow:
+        0 20px 60px rgba(0,0,0,0.25),
+        inset 0 1px 0 rgba(255,255,255,0.35);
+    }
+
+    .hero {
+      margin-bottom: 2rem;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 14px;
+      border-radius: 999px;
+      background: #eef2ff;
+      color: #4338ca;
+      font-size: 13px;
+      font-weight: 700;
+      margin-bottom: 1rem;
     }
 
     h1 {
-      margin-top: 0;
+      margin: 0;
+      font-size: 2.5rem;
+      font-weight: 800;
+      letter-spacing: -0.04em;
+    }
+
+    .subtitle {
+      margin-top: 0.9rem;
+      color: #475569;
+      line-height: 1.7;
+      max-width: 650px;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.25rem;
+    }
+
+    .full-width {
+      grid-column: 1 / -1;
     }
 
     label {
-      font-size: 0.9rem;
-      color: #555;
       display: block;
-      margin-top: 1rem;
+      margin-bottom: 8px;
+      font-size: 13px;
+      font-weight: 700;
+      color: #334155;
     }
 
-    input, select, textarea {
+    input,
+    select,
+    textarea {
       width: 100%;
-      margin-top: 6px;
-      padding: 10px;
-      border-radius: 8px;
-      border: 1px solid #ddd;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 14px 16px;
       font-size: 14px;
-      box-sizing: border-box;
+      background: rgba(255,255,255,0.9);
+      transition: all 0.2s ease;
+      outline: none;
+    }
+
+    input:focus,
+    select:focus,
+    textarea:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 4px rgba(99,102,241,0.15);
+      transform: translateY(-1px);
     }
 
     textarea {
-      height: 100px;
+      min-height: 130px;
       resize: vertical;
+      line-height: 1.5;
+    }
+
+    .button-wrapper {
+      margin-top: 2rem;
+      position: relative;
     }
 
     button {
-      margin-top: 1.5rem;
       width: 100%;
-      padding: 12px;
       border: none;
-      border-radius: 8px;
-      background: #4f46e5;
+      border-radius: 16px;
+      padding: 16px;
+      background: linear-gradient(
+        135deg,
+        var(--primary) 0%,
+        var(--primary-hover) 100%
+      );
       color: white;
       font-size: 15px;
+      font-weight: 700;
       cursor: pointer;
+      transition: all 0.25s ease;
+      box-shadow:
+        0 10px 25px rgba(99,102,241,0.35);
     }
 
     button:hover {
-      background: #4338ca;
+      transform: translateY(-2px);
+      box-shadow:
+        0 18px 35px rgba(99,102,241,0.45);
     }
 
-    .response {
-      margin-top: 2rem;
-      background: #0f172a;
+    button:active {
+      transform: translateY(0);
+    }
+
+    button.loading {
+      opacity: 0.8;
+      pointer-events: none;
+    }
+
+    .spinner {
+      width: 18px;
+      height: 18px;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-top-color: white;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      display: inline-block;
+      vertical-align: middle;
+      margin-right: 10px;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    .status {
+      margin-top: 12px;
+      font-size: 14px;
+      color: var(--muted);
+      min-height: 20px;
+      transition: all 0.2s ease;
+    }
+
+    .section {
+      margin-top: 2.2rem;
+    }
+
+    .section-title {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 1rem;
+      font-size: 1rem;
+      font-weight: 700;
+    }
+
+    .response-panel {
+      background: linear-gradient(
+        180deg,
+        #0f172a 0%,
+        #111827 100%
+      );
       color: #e2e8f0;
-      padding: 1rem;
-      border-radius: 10px;
-      font-family: monospace;
-      white-space: pre-wrap;
+      border-radius: 18px;
+      padding: 1.25rem;
+      border: 1px solid rgba(255,255,255,0.08);
+      min-height: 80px;
+      box-shadow:
+        inset 0 1px 0 rgba(255,255,255,0.05);
     }
 
     .slack-preview {
-      margin-top: 1rem;
+      background: white;
+      border-radius: 18px;
       padding: 1rem;
-      background: #f1f5f9;
-      border-radius: 10px;
-      display: none;
+      border: 1px solid #e2e8f0;
+      box-shadow:
+        0 8px 24px rgba(15,23,42,0.06);
+    }
+
+    .slack-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .avatar {
+      width: 42px;
+      height: 42px;
+      border-radius: 12px;
+      background: linear-gradient(
+        135deg,
+        #4f46e5,
+        #7c3aed
+      );
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: 800;
+      font-size: 14px;
+    }
+
+    .slack-name {
+      font-weight: 700;
+    }
+
+    .slack-time {
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .slack-message {
+      line-height: 1.7;
+      white-space: pre-wrap;
+      color: #1e293b;
+    }
+
+    .async-item {
+      padding: 14px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+    }
+
+    .async-item:last-child {
+      border-bottom: none;
+    }
+
+    .async-label {
+      font-size: 12px;
+      opacity: 0.6;
+      margin-bottom: 6px;
+    }
+
+    .async-message {
+      line-height: 1.7;
+      white-space: pre-wrap;
+    }
+
+    .waiting {
+      opacity: 0.7;
+    }
+
+    @media (max-width: 700px) {
+      .form-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .container {
+        padding: 1.5rem;
+      }
+
+      h1 {
+        font-size: 2rem;
+      }
     }
   </style>
 </head>
+
 <body>
   <div class="container">
-    <h1>Slack Command Simulator</h1>
+
+    <div class="hero">
+      <div class="badge">
+        ⚡ Local Development Sandbox
+      </div>
+
+      <h1>Slack Command Simulator</h1>
+
+      <div class="subtitle">
+        Test slash commands, inspect async responses,
+        and simulate Slack interactions locally before
+        wiring into the real Slack API.
+      </div>
+    </div>
 
     <form id="form">
-      <label>Command</label>
-      <select name="command">
-        <option value="/create-ticket">/create-ticket</option>
-        <option value="/improve-ticket">/improve-ticket</option>
-        <option value="/summarize-thread">/summarize-thread</option>
-      </select>
 
-      <label>User ID</label>
-      <input name="user_id" value="U123456" />
+      <div class="form-grid">
 
-      <label>Channel ID</label>
-      <input name="channel_id" value="C123456" />
+        <div>
+          <label>Command</label>
+          <select name="command">
+            <option value="/create-ticket">/create-ticket</option>
+            <option value="/improve-ticket">/improve-ticket</option>
+            <option value="/summarize-thread">/summarize-thread</option>
+          </select>
+        </div>
 
-      <label>Response URL</label>
-      <input name="response_url" placeholder="Enter response URL" value="https://127.0.0.1:8000/" />
+        <div>
+          <label>User ID</label>
+          <input name="user_id" value="U123456" />
+        </div>
 
-      <label>Describe your issue</label>
-      <textarea name="text" placeholder="e.g. I can't log in to the dashboard after resetting my password"></textarea>
+        <div>
+          <label>Channel ID</label>
+          <input name="channel_id" value="C123456" />
+        </div>
 
-      <button type="submit">Send to /slack/commands</button>
+        <div>
+          <label>Response URL</label>
+          <input
+            name="response_url"
+            value="http://127.0.0.1:8000/slack-responses"
+          />
+        </div>
+
+        <div class="full-width">
+          <label>Describe your issue</label>
+          <textarea
+            name="text"
+            placeholder="e.g. I can't log in after resetting my password"
+          ></textarea>
+        </div>
+
+      </div>
+
+      <div class="button-wrapper">
+        <button type="submit" id="submitButton">
+          🚀 Send to /slack/commands
+        </button>
+
+        <div class="status" id="statusText"></div>
+      </div>
+
     </form>
 
-    <div class="response" id="rawResponse"></div>
-    <div class="slack-preview" id="preview"></div>
+    <div class="section">
+      <div class="section-title">
+        💬 Slack Preview
+      </div>
+
+    <div class="slack-preview" id="slackPreview">
+
+      <div class="slack-header">
+        <div class="avatar">AI</div>
+
+        <div>
+          <div class="slack-name">
+            AI Automations Bot
+          </div>
+
+          <div class="slack-time">
+            preview
+          </div>
+        </div>
+      </div>
+
+      <div class="slack-message waiting" id="slackMessage">
+        Slack responses will appear here after submitting a command.
+      </div>
+
+    </div>
+
+    <div class="section">
+      <div class="section-title">
+        🔄 Async Slack Responses
+      </div>
+
+      <div class="response-panel" id="asyncResponses">
+        <div class="waiting">
+          Waiting for async Slack responses...
+        </div>
+      </div>
+    </div>
+
   </div>
 
   <script>
     const form = document.getElementById("form");
-    const raw = document.getElementById("rawResponse");
-    const preview = document.getElementById("preview");
+    const preview = document.getElementById("slackPreview");
+    const slackMessage = document.getElementById("slackMessage");
+    const asyncResponses = document.getElementById("asyncResponses");
+
+    const submitButton = document.getElementById("submitButton");
+    const statusText = document.getElementById("statusText");
 
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
 
-      const formData = new FormData(form);
+      submitButton.classList.add("loading");
 
-      const res = await fetch("/slack/commands", {
-        method: "POST",
-        body: formData
-      });
+      submitButton.innerHTML = `
+        <span class="spinner"></span>
+        Sending command...
+      `;
 
-      const data = await res.json();
+      statusText.textContent =
+        "Submitting request to /slack/commands...";
 
-      // Pretty JSON output
-      raw.textContent = JSON.stringify(data, null, 2);
+      try {
+        const formData = new FormData(form);
 
-      // Slack-style preview
-      if (data.text) {
-        preview.style.display = "block";
-        preview.innerHTML = `<strong>Slack Response:</strong><br>${data.text}`;
-      } else {
-        preview.style.display = "none";
+        const res = await fetch("/slack/commands", {
+          method: "POST",
+          body: formData
+        });
+
+        const data = await res.json();
+
+        statusText.textContent =
+          "Command received successfully.";
+
+        if (data.text) {
+          slackMessage.classList.remove("waiting");
+          slackMessage.textContent = data.text;
+        }
+
+      } catch (err) {
+        console.error(err);
+
+        statusText.textContent =
+          "Something went wrong while sending the request.";
       }
+
+      submitButton.classList.remove("loading");
+
+      submitButton.innerHTML =
+        "🚀 Send to /slack/commands";
     });
+
+    async function pollResponses() {
+      try {
+        const res = await fetch("/slack-responses");
+        const data = await res.json();
+
+        if (Object.keys(data).length === 0) {
+          asyncResponses.innerHTML = `
+            <div class="waiting">Waiting for async Slack responses...</div>
+          `;
+          return;
+        }
+
+        const text =
+          data.text ||
+          data.message ||
+          JSON.stringify(data, null, 2);
+
+        asyncResponses.innerHTML = `
+          <div class="async-item">
+
+            <div class="async-label">
+              AI Automations Bot
+            </div>
+
+            <div class="async-message">${text}</div>
+
+          </div>
+        `;
+
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    pollResponses();
+
+    setInterval(pollResponses, 1000);
   </script>
 </body>
 </html>
