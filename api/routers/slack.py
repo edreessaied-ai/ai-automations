@@ -124,7 +124,6 @@ async def receive_response(
             indent=2
         )
     )
-
     return JSONResponse(
         content={
             "status": "ok",

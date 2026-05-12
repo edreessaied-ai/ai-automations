@@ -35,15 +35,15 @@ class TicketIntent(StrictBaseModel):
         """
         lines = ["Ticket Intent:"]
         if self.title:
-            lines.append(f" Title: {self.title}")
+            lines.append(f"     Title: {self.title}")
         if self.description:
-            lines.append(f" Description: {self.description}")
+            lines.append(f"     Description: {self.description}")
         if self.priority:
-            lines.append(f" Priority: {self.priority.capitalize()}")
+            lines.append(f"     Priority: {self.priority.capitalize()}")
         if self.assignee:
-            lines.append(f" Assignee: {self.assignee}")
+            lines.append(f"     Assignee: {self.assignee}")
         if self.labels:
-            lines.append(f" Labels: {', '.join(self.labels)}")
+            lines.append(f"     Labels: {', '.join(self.labels)}")
 
         return "\n".join(lines)
 
