@@ -348,7 +348,7 @@
           <label>Response URL</label>
           <input
             name="response_url"
-            value="http://127.0.0.1:8000/slack-responses"
+            value="http://127.0.0.1:8000/slack/responses"
           />
         </div>
 
@@ -398,19 +398,6 @@
       </div>
 
     </div>
-
-    <div class="section">
-      <div class="section-title">
-        🔄 Async Slack Responses
-      </div>
-
-      <div class="response-panel" id="asyncResponses">
-        <div class="waiting">
-          Waiting for async Slack responses...
-        </div>
-      </div>
-    </div>
-
   </div>
 
   <script>
@@ -432,8 +419,11 @@
         Sending command...
       `;
 
-      statusText.textContent =
-        "Submitting request to /slack/commands...";
+      statusText.textContent = "Submitting request to /slack/commands...";
+
+      slackMessage.classList.remove("waiting");
+
+      slackMessage.textContent = "Thinking...";
 
       try {
         const formData = new FormData(form);
@@ -468,13 +458,11 @@
 
     async function pollResponses() {
       try {
-        const res = await fetch("/slack-responses");
+        const res = await fetch("/slack/responses");
+
         const data = await res.json();
 
         if (Object.keys(data).length === 0) {
-          asyncResponses.innerHTML = `
-            <div class="waiting">Waiting for async Slack responses...</div>
-          `;
           return;
         }
 
@@ -483,23 +471,14 @@
           data.message ||
           JSON.stringify(data, null, 2);
 
-        asyncResponses.innerHTML = `
-          <div class="async-item">
+        slackMessage.classList.remove("waiting");
 
-            <div class="async-label">
-              AI Automations Bot
-            </div>
-
-            <div class="async-message">${text}</div>
-
-          </div>
-        `;
+        slackMessage.textContent = text;
 
       } catch (err) {
         console.error(err);
       }
     }
-
     pollResponses();
 
     setInterval(pollResponses, 1000);

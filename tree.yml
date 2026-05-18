@@ -1,0 +1,89 @@
+.
+├── DESIGNDOC.md
+├── agents
+│   ├── __init__.py
+│   ├── chat.html
+│   └── ticket_agent.py
+├── api
+│   ├── __init__.py
+│   ├── routers
+│   │   ├── __init__.py
+│   │   ├── jira.py
+│   │   ├── slack.py
+│   │   └── ticket.py
+│   └── services
+│       ├── __init__.py
+│       ├── jira_service.py
+│       └── ticket_service.py
+├── domain
+│   ├── __init__.py
+│   └── ticket
+│       ├── __init__.py
+│       ├── handler.py
+│       ├── models.py
+│       └── pipeline.py
+├── icons
+│   └── slack_bot_icon.png
+├── input.txt
+├── integrations
+│   ├── __init__.py
+│   ├── llm
+│   │   ├── __init__.py
+│   │   ├── llm_client.py
+│   │   └── openai_client.py
+│   └── slack
+│       ├── __init__.py
+│       ├── client.py
+│       ├── dispatcher.py
+│       ├── models.py
+│       └── parser.py
+├── pyproject.toml
+├── templates
+│   └── index.html
+├── tests
+│   └── agents
+│       └── test_ticket_agent.py
+├── tree.log
+├── tree.yaml
+├── tree.yml
+├── utilities
+│   ├── __init__.py
+│   ├── constants.py
+│   ├── exceptions.py
+│   ├── logger.py
+│   ├── retry_util.py
+│   └── types.py
+└── web
+    ├── CNAME
+    ├── README.md
+    ├── dist
+    │   ├── data_loading_util.js
+    │   ├── form.js
+    │   ├── form_interceptor.js
+    │   ├── main.js
+    │   ├── retry_util.js
+    │   ├── router.js
+    │   ├── ticket_drafter.js
+    │   ├── ticket_drafter_util.js
+    │   ├── ticket_schema.js
+    │   └── views.js
+    ├── index.html
+    ├── package-lock.json
+    ├── package.json
+    ├── src
+    │   ├── data_loading_util.ts
+    │   ├── error_page.html
+    │   ├── form.png
+    │   ├── form.ts
+    │   ├── form_interceptor.ts
+    │   ├── main.ts
+    │   ├── retry_util.ts
+    │   ├── router.ts
+    │   ├── ticket_drafter.ts
+    │   ├── ticket_drafter_util.ts
+    │   ├── ticket_schema.ts
+    │   └── views.ts
+    ├── ticket-email.html
+    └── tsconfig.json
+
+18 directories, 69 files

@@ -1,25 +1,67 @@
 """
-Logger utility that writes to
-~/logs/<log_name>.log.<YYYY>-<MM>-<DD>.<HH>-00
+Centralized logging utility with hourly log rotation.
 
-Rotates automatically when the hour changes.
+Log files are written to:
+
+~/logs/<log_name>.log
+
+and automatically rotated every hour into files like:
+
+<log_name>.log.2026-05-19_18
+
+Features:
+- Hourly log rotation
+- Automatic flushing after each record
+- Request-scoped request_id injection
+- Optional console logging
+- Duplicate-handler protection
+- Safe singleton logger configuration
 """
 
 import json
 import logging
-from datetime import datetime
+from contextvars import ContextVar
+from logging.handlers import TimedRotatingFileHandler
 from pathlib import Path
 
 from utilities.types import Json
 
-# Cache of active loggers per timestamp
-timestamp_to_logger_cache: dict[str, logging.Logger] = {}
+request_id_context_var: ContextVar[str] = ContextVar(
+    "request_id",
+    default="no-active-request"
+)
 
 
-def _get_hour_timestamp() -> str:
-    """Returns timestamp rounded to the current hour."""
-    now = datetime.now()
-    return now.strftime("%Y-%m-%d.%H-00")
+class RequestContextFilter(logging.Filter):
+    """Inject request_id from contextvars into log records."""
+
+    def filter(self, record: logging.LogRecord) -> bool:
+        record.request_id = request_id_context_var.get()
+        return True
+
+
+class FlushTimedRotatingFileHandler(
+    TimedRotatingFileHandler
+):
+    """
+    Timed rotating file handler that flushes
+    immediately after each log record.
+    """
+
+    def emit(self, record: logging.LogRecord) -> None:
+        super().emit(record)
+        self.flush()
+
+
+class FlushStreamHandler(logging.StreamHandler):
+    """
+    Stream handler that flushes immediately
+    after each log record.
+    """
+
+    def emit(self, record: logging.LogRecord) -> None:
+        super().emit(record)
+        self.flush()
 
 
 def get_logger(
@@ -28,56 +70,74 @@ def get_logger(
     write_to_console: bool = False,
 ) -> logging.Logger:
     """
-    Returns a logger that writes to:
-    ~/logs/<log_name>.log.<YYYY>-<MM>-<DD>.<HH>-00
+    Returns a configured singleton logger.
 
-    Rotates automatically when the hour changes.
+    Logs rotate automatically every hour.
     """
 
-    timestamp = _get_hour_timestamp()
-    logger_key = f"{log_name}_{timestamp}"
+    logger = logging.getLogger(log_name)
 
-    # Return cached logger if it exists
-    if logger_key in timestamp_to_logger_cache:
-        return timestamp_to_logger_cache[logger_key]
+    # Prevent duplicate configuration
+    if logger.handlers:
+        return logger
 
-    # Resolve ~/logs directory
+    logger.setLevel(level)
+    logger.propagate = False
+
+    # Create ~/logs directory
     log_dir = Path.home() / "logs"
     log_dir.mkdir(parents=True, exist_ok=True)
 
-    # Log file path
-    log_file = log_dir / f"{log_name}.log.{timestamp}"
+    # Base log file path
+    log_file = log_dir / f"{log_name}.log"
 
-    # Create logger
-    log_handler = logging.getLogger(log_name)
-    log_handler.setLevel(level)
-    log_handler.propagate = False  # Prevent duplicate logs
-
-    # Formatter
+    # Shared formatter
     formatter = logging.Formatter(
-        fmt="%(asctime)s | %(levelname)s | %(name)s | %(message)s",
+        fmt=(
+            "%(asctime)s | "
+            "%(levelname)s | "
+            "%(request_id)s | "
+            "%(name)s | "
+            "%(message)s"
+        ),
         datefmt="%Y-%m-%d %H:%M:%S",
     )
 
-    # File handler
-    file_handler = logging.FileHandler(log_file)
+    context_filter = RequestContextFilter()
+
+    # Rotating file handler
+    file_handler = FlushTimedRotatingFileHandler(
+        filename=log_file,
+        when="H",
+        interval=1,
+        backupCount=168,  # Keep 7 days of hourly logs
+        encoding="utf-8",
+    )
+
     file_handler.setLevel(level)
     file_handler.setFormatter(formatter)
-    log_handler.addHandler(file_handler)
+    file_handler.addFilter(context_filter)
 
-    # Console handler (optional)
+    logger.addHandler(file_handler)
+
+    # Optional console handler
     if write_to_console:
-        console_handler = logging.StreamHandler()
+        console_handler = FlushStreamHandler()
+
         console_handler.setLevel(level)
         console_handler.setFormatter(formatter)
-        log_handler.addHandler(console_handler)
+        console_handler.addFilter(context_filter)
 
-    # Cache it
-    timestamp_to_logger_cache[logger_key] = log_handler
+        logger.addHandler(console_handler)
 
-    return log_handler
+    return logger
 
 
 def pretty_print_json(data: Json) -> str:
-    """Utility to pretty print JSON data."""
-    return json.dumps(data, indent=4, ensure_ascii=False)
+    """Pretty-print JSON data."""
+
+    return json.dumps(
+        data,
+        indent=4,
+        ensure_ascii=False,
+    )
