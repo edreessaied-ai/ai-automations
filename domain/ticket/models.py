@@ -7,6 +7,7 @@ from pydantic import BaseModel, ConfigDict
 
 # Alias Types
 TicketUserPromptText = str
+TicketProject = str
 
 
 # Pydantic Models for Ticket Data
@@ -33,7 +34,7 @@ class TicketIntent(StrictBaseModel):
         """
         Returns a string representation of the TicketIntent.
         """
-        lines = ["Ticket Intent:"]
+        lines = []
         if self.title:
             lines.append(f"     Title: {self.title}")
         if self.description:
@@ -79,7 +80,7 @@ class Ticket(StrictBaseModel):
     reducing bugs, simplifying parsing, and improving debuggability in
     production pipelines.
     """
-
+    ticket_project: TicketProject
     title: str
     type: str
     impact: str

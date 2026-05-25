@@ -7,7 +7,14 @@ import integrations.slack.client as client
 import integrations.slack.models as models
 import utilities.exceptions as exceptions
 import utilities.logger as logger
+from api.services.jira_service import (
+    JiraService,
+    load_jira_api_token,
+    load_jira_url,
+    load_jira_user_email,
+)
 from domain.ticket.pipeline import create_ticket_intent_from_user_input
+from integrations.jira.models import JIRA_PROJECT
 
 log_handler = logger.get_logger(__name__)
 
@@ -39,18 +46,45 @@ async def handle_create_ticket(
     """
     Handler for processing Slack ticket creation requests
     """
-    # Process the user input and create a structured ticket intent
-    ticket_intent = await create_ticket_intent_from_user_input(
-        slack_request.text
-    )
-    # Build a Slack message with the ticket intent
-    # and return it as a Slack response
-    slack_text_body = ticket_intent.to_string()
     log_handler.info(
-        f"\nGenerated Slack response text: \n{slack_text_body}"
+        "Creating ticket in JIRA based on Slack command..."
+    )
+    try:
+        # Process the user input and create a structured ticket intent
+        ticket_intent = await create_ticket_intent_from_user_input(
+            slack_request.text
+        )
+        jira_service = JiraService(
+            base_url=load_jira_url(),
+            email=load_jira_user_email(),
+            api_token=load_jira_api_token(),
+            project_key=JIRA_PROJECT
+        )
+        jira_instance = jira_service.create_ticket(ticket_intent)
+    except Exception:
+        # This handler runs in a fire-and-forget background task, so an
+        # uncaught error would leave the user with only the initial ack.
+        log_handler.exception(
+            "Failed to create Jira ticket from Slack command"
+        )
+        error_message = models.SlackMessage(
+            text=(
+                ":warning: Sorry, I couldn't create your ticket. "
+                "Please try again in a moment."
+            ),
+        )
+        return error_message.to_slack_response()
+
+    slack_response_string = (
+        f"Ticket created successfully in JIRA: "
+        f"{jira_instance.issue_key} - {jira_instance.issue_url}"
+        f"\n{ticket_intent.to_string()}"
+    )
+    log_handler.info(
+        f"\nGenerated Slack response text: \n{slack_response_string}"
     )
     slack_message = models.SlackMessage(
-        text=slack_text_body,
+        text=slack_response_string,
     )
     return slack_message.to_slack_response()
 
