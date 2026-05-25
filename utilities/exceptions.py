@@ -13,3 +13,7 @@ class DataTransformationError(Exception):
 
 class SlackResponseSendError(Exception):
     """Raised when sending a response to Slack fails."""
+
+
+class JiraConfigurationError(Exception):
+    """Raised when required Jira configuration is missing."""

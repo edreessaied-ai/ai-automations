@@ -18,6 +18,7 @@ import requests
 from domain.ticket.models import TicketIntent
 from integrations.jira.mapper import intent_to_jira_payload
 from integrations.jira.models import JIRA_TRANSACTION_TIMEOUT, JiraInstance
+from utilities.exceptions import JiraConfigurationError
 from utilities.logger import get_logger
 from utilities.retry_util import RetryException, retry
 from utilities.types import EmailStr, TokenStr, URLStr
@@ -25,38 +26,38 @@ from utilities.types import EmailStr, TokenStr, URLStr
 log_handler = get_logger(__name__)
 
 
-def load_jira_user_email() -> str | None:
+def load_jira_user_email() -> str:
     """
     Load the JIRA user email.
     """
     jira_user_email = os.getenv("JIRA_USER_EMAIL")
     if not jira_user_email:
-        log_handler.error(
-            "JIRA user email not found in environment variables."
+        raise JiraConfigurationError(
+            "JIRA_USER_EMAIL not found in environment variables."
         )
     return jira_user_email
 
 
-def load_jira_api_token() -> str | None:
+def load_jira_api_token() -> str:
     """
     Load the JIRA API token.
     """
     jira_api_token = os.getenv("JIRA_API_TOKEN")
     if not jira_api_token:
-        log_handler.error(
-            "JIRA API token not found in environment variables."
+        raise JiraConfigurationError(
+            "JIRA_API_TOKEN not found in environment variables."
         )
     return jira_api_token
 
 
-def load_jira_url() -> str | None:
+def load_jira_url() -> str:
     """
     Load the JIRA URL.
     """
     jira_url = os.getenv("JIRA_URL")
     if not jira_url:
-        log_handler.error(
-            "JIRA URL not found in environment variables."
+        raise JiraConfigurationError(
+            "JIRA_URL not found in environment variables."
         )
     return jira_url
 
@@ -103,10 +104,16 @@ class JiraService:
             f"Creating Jira ticket for intent: \n{ticket_intent.to_string()}"
         )
         # Transform the internal TicketIntent into a Jira-compatible format
-        jira_payload = intent_to_jira_payload(ticket_intent=ticket_intent)
+        jira_payload = intent_to_jira_payload(
+            ticket_intent=ticket_intent,
+            project_key=self.project_key,
+        )
 
-        url = f"{self.base_url}/rest/api/3/issue"
+        url = f"{self.base_url}/rest/api/2/issue"
         try:
+            # Only retry connection failures, where the request never
+            # reached Jira. Read timeouts and other errors are not retried,
+            # since the POST is not idempotent and could create duplicates.
             response = retry(
                 requests.post,
                 url=url,
@@ -114,8 +121,9 @@ class JiraService:
                 auth=(self.email, self.api_token),
                 headers={"Accept": "application/json"},
                 timeout=JIRA_TRANSACTION_TIMEOUT,
+                retry_exceptions=(requests.exceptions.ConnectionError,),
             )
-        except RetryException as exc:
+        except (RetryException, requests.exceptions.RequestException) as exc:
             log_handler.error(
                 f"Error occurred while creating Jira ticket: {exc}"
             )

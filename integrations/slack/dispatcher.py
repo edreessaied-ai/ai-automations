@@ -1,6 +1,7 @@
 """
     Slack command dispatcher for processing incoming Slack commands.
 """
+import asyncio
 from collections.abc import Callable
 
 import integrations.slack.client as client
@@ -60,7 +61,11 @@ async def handle_create_ticket(
             api_token=load_jira_api_token(),
             project_key=JIRA_PROJECT
         )
-        jira_instance = jira_service.create_ticket(ticket_intent)
+        # create_ticket uses blocking I/O (requests); run it in a thread
+        # so it doesn't block the event loop in this async background task.
+        jira_instance = await asyncio.to_thread(
+            jira_service.create_ticket, ticket_intent
+        )
     except Exception:
         # This handler runs in a fire-and-forget background task, so an
         # uncaught error would leave the user with only the initial ack.

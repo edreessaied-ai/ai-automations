@@ -1,23 +1,29 @@
 """
     Transforms internal domain models → Jira payloads.
 """
+from typing import Any
+
 from domain.ticket.models import TicketIntent
 from domain.ticket.transformers import draft_to_ticket, intent_to_draft
-from integrations.jira.models import JIRA_PROJECT
 
 
-def intent_to_jira_payload(ticket_intent: TicketIntent) -> dict:
+def intent_to_jira_payload(
+    ticket_intent: TicketIntent,
+    project_key: str,
+) -> dict[str, Any]:
     """
     Transforms a TicketIntent into a Jira API payload.
     """
     ticket_draft = intent_to_draft(ticket_intent)
     jira_ticket = draft_to_ticket(
         ticket_draft,
-        ticket_project=JIRA_PROJECT
+        ticket_project=project_key,
     )
     ticket_priority = jira_ticket.priority if jira_ticket.priority else None
     payload = {
         "fields": {
+            "project": {"key": project_key},
+            "issuetype": {"name": jira_ticket.type},
             "summary": jira_ticket.title or "Untitled",
             "description": jira_ticket.description or "",
             "priority": {"name": ticket_priority},
