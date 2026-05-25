@@ -82,7 +82,7 @@ async def handle_create_ticket(
 
     slack_response_string = (
         f"Ticket created successfully in JIRA: "
-        f"{jira_instance.issue_key} - {jira_instance.issue_url}"
+        f"{jira_instance.issue_key}, {jira_instance.issue_url}"
         f"\n{ticket_intent.to_string()}"
     )
     log_handler.info(
