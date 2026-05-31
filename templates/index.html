@@ -400,6 +400,68 @@
     </div>
   </div>
 
+  <div class="section">
+    <div class="section-title">
+      🧵 Thread → Jira Ticket (@TicketBot)
+    </div>
+
+    <div class="subtitle" style="margin-top:0;margin-bottom:1rem;">
+      Simulate mentioning the bot inside a Slack thread. The bot reads the
+      thread, drafts a Jira ticket, and waits for your confirmation before
+      creating it — exactly the design-doc flow, no real Slack workspace
+      required.
+    </div>
+
+    <div class="form-grid">
+      <div>
+        <label>Channel ID</label>
+        <input id="threadChannel" value="C123456" />
+      </div>
+
+      <div>
+        <label>Thread TS</label>
+        <input id="threadTs" value="1717000000.123" />
+      </div>
+
+      <div class="full-width">
+        <label>Thread messages (one per line, "user: message")</label>
+        <textarea id="threadMessages">alice: Checkout is failing for a bunch of EU customers since the 2pm deploy.
+bob: Yeah, the payments API p99 latency jumped from 200ms to 4s.
+alice: Errors are mostly 504s from the payments service.
+carol: Rolling back the deploy now, but we should track this.</textarea>
+      </div>
+
+      <div class="full-width">
+        <label>Your mention to @TicketBot</label>
+        <input
+          id="threadInstruction"
+          value="@TicketBot create a high priority bug ticket from this thread"
+        />
+      </div>
+    </div>
+
+    <div class="button-wrapper">
+      <button type="button" id="threadButton">
+        🤖 Mention @TicketBot in thread
+      </button>
+      <div class="status" id="threadStatus"></div>
+    </div>
+
+    <div class="slack-preview" id="threadPreview" style="margin-top:1.5rem;">
+      <div class="slack-header">
+        <div class="avatar">AI</div>
+        <div>
+          <div class="slack-name">TicketBot</div>
+          <div class="slack-time">thread reply</div>
+        </div>
+      </div>
+      <div class="slack-message waiting" id="threadMessage">
+        The ticket draft will appear here after you mention the bot.
+      </div>
+      <div id="threadActions"></div>
+    </div>
+  </div>
+
   <script>
     const form = document.getElementById("form");
     const preview = document.getElementById("slackPreview");
@@ -482,6 +544,169 @@
     pollResponses();
 
     setInterval(pollResponses, 10000);
+  </script>
+
+  <script>
+    // ---- Thread → Jira ticket (@TicketBot) demo ----
+    const threadButton = document.getElementById("threadButton");
+    const threadStatus = document.getElementById("threadStatus");
+    const threadMessage = document.getElementById("threadMessage");
+    const threadActions = document.getElementById("threadActions");
+
+    function parseThreadMessages(raw, threadTs) {
+      // Each non-empty line is "user: text"; first message uses the thread ts.
+      return raw
+        .split("\n")
+        .map((line) => line.trim())
+        .filter((line) => line.length > 0)
+        .map((line, index) => {
+          const sep = line.indexOf(":");
+          const hasUser = sep > 0;
+          return {
+            user: hasUser ? line.slice(0, sep).trim() : "user",
+            text: hasUser ? line.slice(sep + 1).trim() : line,
+            timestamp: index === 0 ? threadTs : `${threadTs}${index}`,
+          };
+        });
+    }
+
+    function renderBlocks(data) {
+      threadActions.innerHTML = "";
+      const blocks = data.blocks || [];
+
+      const sectionTexts = blocks
+        .filter((b) => b.type === "section" && b.text)
+        .map((b) => b.text.text);
+
+      threadMessage.classList.remove("waiting");
+      threadMessage.textContent =
+        sectionTexts.join("\n\n") || data.text || "(no content)";
+
+      const actionBlock = blocks.find((b) => b.type === "actions");
+      if (!actionBlock) return;
+
+      actionBlock.elements.forEach((el) => {
+        const btn = document.createElement("button");
+        btn.textContent = el.text.text;
+        btn.style.width = "auto";
+        btn.style.marginRight = "10px";
+        btn.style.marginTop = "12px";
+        btn.style.display = "inline-block";
+        if (el.action_id === "cancel_ticket") {
+          btn.style.background =
+            "linear-gradient(135deg,#64748b 0%,#475569 100%)";
+        }
+        btn.addEventListener("click", () =>
+          sendInteraction(el.action_id, el.value)
+        );
+        threadActions.appendChild(btn);
+      });
+    }
+
+    async function pollLatestMessage(predicate, attempts = 20) {
+      for (let i = 0; i < attempts; i++) {
+        const res = await fetch("/slack/sim/latest-message");
+        const data = await res.json();
+        if (Object.keys(data).length > 0 && predicate(data)) {
+          return data;
+        }
+        await new Promise((r) => setTimeout(r, 700));
+      }
+      return null;
+    }
+
+    async function sendInteraction(actionId, draftId) {
+      threadActions.innerHTML = "";
+      threadStatus.textContent =
+        actionId === "confirm_ticket"
+          ? "Creating Jira ticket..."
+          : "Cancelling...";
+
+      await fetch("/slack/interactions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: actionId, draft_id: draftId }),
+      });
+
+      // Wait for a reply that is no longer the draft (no action buttons).
+      const data = await pollLatestMessage(
+        (d) => !(d.blocks || []).some((b) => b.type === "actions")
+      );
+      threadStatus.textContent = "Done.";
+      if (data) renderBlocks(data);
+    }
+
+    threadButton.addEventListener("click", async () => {
+      threadButton.classList.add("loading");
+      threadButton.innerHTML =
+        '<span class="spinner"></span> Reading thread...';
+      threadStatus.textContent = "Seeding thread and mentioning the bot...";
+      threadActions.innerHTML = "";
+      threadMessage.classList.remove("waiting");
+      threadMessage.textContent = "Thinking...";
+
+      const channel = document.getElementById("threadChannel").value;
+      const threadTs = document.getElementById("threadTs").value;
+      const messages = parseThreadMessages(
+        document.getElementById("threadMessages").value,
+        threadTs
+      );
+      const instruction =
+        document.getElementById("threadInstruction").value;
+
+      try {
+        // 1) Seed the thread (stands in for conversations.replies).
+        await fetch("/slack/sim/thread", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            channel_id: channel,
+            thread_ts: threadTs,
+            messages,
+          }),
+        });
+
+        // 2) Deliver a simulated app_mention event.
+        await fetch("/slack/events", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            type: "event_callback",
+            event: {
+              type: "app_mention",
+              channel,
+              thread_ts: threadTs,
+              text: instruction,
+              user: "U999BOTCALLER",
+              event_ts: `${threadTs}999`,
+            },
+          }),
+        });
+
+        // 3) Poll for the draft preview (the one with action buttons).
+        threadStatus.textContent = "Generating ticket draft...";
+        const draft = await pollLatestMessage((d) =>
+          (d.blocks || []).some((b) => b.type === "actions")
+        );
+
+        if (draft) {
+          threadStatus.textContent =
+            "Draft ready — confirm or cancel below.";
+          renderBlocks(draft);
+        } else {
+          threadStatus.textContent =
+            "No draft returned. Check server logs (LLM/credentials).";
+          threadMessage.textContent =
+            "The bot did not return a draft in time.";
+        }
+      } catch (err) {
+        console.error(err);
+        threadStatus.textContent = "Something went wrong. See console.";
+      }
+
+      threadButton.classList.remove("loading");
+      threadButton.innerHTML = "🤖 Mention @TicketBot in thread";
+    });
   </script>
 </body>
 </html>

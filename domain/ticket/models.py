@@ -37,6 +37,8 @@ class TicketIntent(StrictBaseModel):
     priority: str | None
     assignee: str | None
     labels: list[str] | None
+    # Short, human-readable summary surfaced in the Slack draft preview.
+    summary: str | None
 
     def to_string(self) -> str:
         """
@@ -53,6 +55,8 @@ class TicketIntent(StrictBaseModel):
             lines.append(f"     Assignee: {self.assignee}")
         if self.labels:
             lines.append(f"     Labels: {', '.join(self.labels)}")
+        if self.summary:
+            lines.append(f"     Summary: {self.summary}")
 
         return "\n".join(lines)
 
@@ -125,6 +129,9 @@ def format_ticket_intent(intent: TicketIntent) -> str:
 
     if intent.priority:
         sections.append(f"*Priority:* {intent.priority}")
+
+    if intent.summary:
+        sections.append(f"*Summary:*\n{intent.summary}")
 
     if intent.assignee:
         sections.append(f"*Assignee:* {intent.assignee}")

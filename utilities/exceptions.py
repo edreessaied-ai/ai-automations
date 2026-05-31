@@ -17,3 +17,15 @@ class SlackResponseSendError(Exception):
 
 class JiraConfigurationError(Exception):
     """Raised when required Jira configuration is missing."""
+
+
+class SlackConfigurationError(Exception):
+    """Raised when required Slack configuration is missing."""
+
+
+class SlackThreadContextError(Exception):
+    """Raised when a Slack thread cannot be retrieved or is empty."""
+
+
+class LLMTicketGenerationError(Exception):
+    """Raised when the LLM cannot confidently generate a ticket."""

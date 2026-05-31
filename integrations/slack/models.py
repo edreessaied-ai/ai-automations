@@ -28,6 +28,14 @@ class SlackRequestType(StrEnum):
     UNKNOWN_COMMAND = "unknown command"
 
 
+class SlackActionType(StrEnum):
+    """
+    Interactive Block Kit action ids used by the draft preview buttons.
+    """
+    CONFIRM_TICKET = "confirm_ticket"
+    CANCEL_TICKET = "cancel_ticket"
+
+
 class NormalizedSlackCommandRequest(BaseModel):
     """
     Normalized request from Slack to backend.
@@ -74,3 +82,52 @@ class SlackMessage:
         if self.blocks is not None:
             payload["blocks"] = self.blocks
         return payload
+
+
+class SlackThreadMessage(BaseModel):
+    """
+    A single message retrieved from a Slack thread.
+
+    Mirrors the SlackMessage internal model from the design doc
+    (user / text / timestamp).
+    """
+    user: str
+    text: str
+    timestamp: SlackTimestampStr
+
+
+class SlackThreadContext(BaseModel):
+    """
+    Thread-scoped context gathered for an explicit bot mention.
+
+    This is the only context the assistant is allowed to reason over in
+    the MVP: a single thread the user explicitly invoked the bot in.
+    """
+    channel_id: SlackChannelIDStr
+    thread_ts: SlackTimestampStr
+    messages: list[SlackThreadMessage]
+
+
+class AppMentionEvent(BaseModel):
+    """
+    Normalized representation of a Slack `app_mention` event.
+
+    `thread_ts` is optional: a mention posted directly in a channel (not in
+    a thread) has no thread context, which the MVP explicitly rejects.
+    """
+    channel_id: SlackChannelIDStr
+    user_id: SlackUserIDStr | None
+    text: SlackInputTextStr
+    thread_ts: SlackTimestampStr | None
+    event_ts: SlackTimestampStr
+
+
+class SlackInteractionAction(BaseModel):
+    """
+    Normalized representation of an interactive button click coming back
+    from Slack (or the local simulator).
+    """
+    action: SlackActionType
+    draft_id: str
+    response_url: HttpUrl | None = None
+    user_id: SlackUserIDStr | None = None

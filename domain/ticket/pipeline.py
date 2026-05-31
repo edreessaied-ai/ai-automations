@@ -71,6 +71,48 @@ Priority Guidelines:
 - Low: unclear request, casual input, informational note, or non-urgent issue
 """
 
+# System prompt for turning a Slack thread discussion into a Jira ticket.
+# Responsibilities mirror the "LLM Prompting Strategy" section of the
+# Slack -> Jira Ticket Assistant design doc.
+THREAD_SYSTEM_PROMPT = """
+You convert a Slack thread discussion into a single, well-structured
+Jira ticket.
+
+Return exactly ONE valid JSON object. Do not include any text outside
+the JSON.
+
+Output schema:
+- title: concise, specific ticket title (no trailing punctuation)
+- description: structured explanation of the issue, grounded only in the
+  thread. Preserve important technical details (services, errors,
+  timestamps, deploys) mentioned in the conversation.
+- priority: one of ["Low", "Medium", "High"]
+- labels: list of relevant tags inferred from the discussion (can be empty)
+- summary: one or two sentence plain-language summary of the issue
+- assignee: null (do not assign anyone in the MVP)
+
+You SHOULD:
+- Identify the operational issue being discussed
+- Ignore irrelevant chatter, greetings, and side conversations
+- Produce a concise ticket title
+- Generate a structured, readable description
+- Infer the most likely priority from the impact described
+
+You MUST NOT:
+- Invent facts that are not present in the thread
+- Overstate certainty
+- Assume missing details
+
+Priority Guidelines:
+- High: outage, blocking issue, production impact, urgent operational pain
+- Medium: meaningful work with moderate urgency or impact
+- Low: unclear, informational, or non-urgent
+
+If the user included instructions in their request (for example
+"make this a high priority bug" or "summarize this into an incident
+ticket"), honor them as long as they do not require inventing facts.
+""".strip()
+
 llm_client = OpenAILLMClient()
 
 
@@ -101,5 +143,48 @@ async def create_ticket_intent_from_user_input(
     ticket_intent_str = ticket_intent.to_string()
     log_handler.info(
         f"Received ticket intent from LLM: {ticket_intent_str}"
+    )
+    return ticket_intent
+
+
+def _build_thread_prompt(
+    thread_text: str,
+    user_instructions: str | None,
+) -> str:
+    """
+    Combine the cleaned thread transcript with any user instructions
+    from the bot mention into a single LLM prompt.
+    """
+    instructions = (user_instructions or "").strip()
+    instruction_block = (
+        f"User instructions: {instructions}"
+        if instructions
+        else "User instructions: (none provided)"
+    )
+    return (
+        f"{instruction_block}\n\n"
+        "Slack thread (chronological order):\n"
+        f"{thread_text}"
+    )
+
+
+async def create_ticket_intent_from_thread(
+    thread_text: str,
+    user_instructions: str | None = None,
+) -> TicketIntent:
+    """
+    Build a structured TicketIntent from a cleaned Slack thread transcript
+    plus any instructions included in the bot mention.
+    """
+    log_handler.info("Creating ticket intent from Slack thread context.")
+    prompt = _build_thread_prompt(thread_text, user_instructions)
+    ticket_intent = llm_client.extract_structured(
+        prompt=prompt,
+        system_prompt=THREAD_SYSTEM_PROMPT,
+        data_model=TicketIntent,
+        max_retries=5,
+    )
+    log_handler.info(
+        f"Received thread ticket intent from LLM: {ticket_intent.to_string()}"
     )
     return ticket_intent
