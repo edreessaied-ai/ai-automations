@@ -1,6 +1,7 @@
 """
 Ticket Models - Defines the data structures for representing tickets.
 """
+from enum import StrEnum
 from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict
@@ -8,6 +9,13 @@ from pydantic import BaseModel, ConfigDict
 # Alias Types
 TicketUserPromptText = str
 TicketProject = str
+
+
+class TicketPriority(StrEnum):
+    """Defines allowed priority levels for tickets."""
+    LOW = "Low"
+    MEDIUM = "Medium"
+    HIGH = "High"
 
 
 # Pydantic Models for Ticket Data
@@ -95,6 +103,7 @@ def pretty_print_ticket(ticket: Ticket) -> str:
     """
     return (
         "\n\n"
+        f"Project: \n{ticket.ticket_project}\n\n"
         f"Title: \n{ticket.title}\n\n"
         f"Priority: \n{ticket.priority}\n\n"
         f"Labels: \n{', '.join(ticket.labels)}\n\n"

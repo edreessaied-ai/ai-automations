@@ -6,8 +6,21 @@ from domain.ticket.models import (
     Ticket,
     TicketDraft,
     TicketIntent,
+    TicketPriority,
     TicketProject,
 )
+
+
+def _normalize_priority(priority: str | None) -> TicketPriority:
+    """
+    Coerce a free-form or missing priority into a valid ticket priority,
+    defaulting to "Low" when the value is absent or unrecognized.
+    """
+    if priority:
+        normalized = priority.strip().capitalize()
+        if normalized in {"Low", "Medium", "High"}:
+            return TicketPriority(normalized)
+    return TicketPriority.LOW
 
 
 def intent_to_draft(intent: TicketIntent) -> TicketDraft:
@@ -38,6 +51,6 @@ def draft_to_ticket(
         type="Task",
         impact="Medium",
         description=draft.description or "",
-        priority=draft.priority,
+        priority=_normalize_priority(draft.priority),
         labels=draft.labels,
     )

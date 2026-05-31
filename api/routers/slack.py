@@ -1,6 +1,8 @@
 """
 Slack router for handling Slack-related API endpoints.
 """
+from typing import Any
+
 from fastapi import APIRouter, BackgroundTasks, Request
 from fastapi.responses import JSONResponse
 from fastapi.templating import Jinja2Templates
@@ -17,7 +19,7 @@ slack_backend_router = APIRouter()
 # Set up Jinja2 templates for rendering the Slack simulator UI
 templates = Jinja2Templates(directory="templates")
 # Shared in-memory state
-latest_slack_response = {}
+latest_slack_response: dict[str, Any] = {}
 
 
 @slack_backend_router.post("/commands")
@@ -31,7 +33,7 @@ async def slack_command_router(
     slack_payload = await request.form()
     slack_command_request = (
         parser.build_slack_command_request(
-            slack_payload
+            dict(slack_payload)
         )
     )
     background_tasks_manager.add_task(
@@ -42,7 +44,7 @@ async def slack_command_router(
 
 
 @slack_backend_router.get("/responses")
-def get_latest_slack_response():
+def get_latest_slack_response() -> JSONResponse:
     """
     Endpoint to retrieve the latest Slack response for testing purposes.
     """
@@ -50,7 +52,7 @@ def get_latest_slack_response():
 
 
 @slack_backend_router.post("/responses")
-def receive_slack_response(slack_response: dict):
+def receive_slack_response(slack_response: dict[str, Any]) -> JSONResponse:
     """
     Endpoint to receive Slack responses from
     the dispatcher for testing purposes.

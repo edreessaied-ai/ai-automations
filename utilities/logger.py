@@ -23,6 +23,7 @@ import logging
 from contextvars import ContextVar
 from logging.handlers import TimedRotatingFileHandler
 from pathlib import Path
+from typing import TextIO
 
 from utilities.types import Json
 
@@ -53,7 +54,7 @@ class FlushTimedRotatingFileHandler(
         self.flush()
 
 
-class FlushStreamHandler(logging.StreamHandler):
+class FlushStreamHandler(logging.StreamHandler[TextIO]):
     """
     Stream handler that flushes immediately
     after each log record.

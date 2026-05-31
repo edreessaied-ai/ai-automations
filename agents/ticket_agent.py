@@ -117,7 +117,7 @@ def send_ticket_request_to_llm(user_prompt: str) -> Ticket:
         return obj
 
     # parsed is the final dict with all escape sequences decoded
-    parsed = _decode_escapes(json.loads(response.output[0].content[0].text))
+    parsed = _decode_escapes(json.loads(response.output_text))
     return Ticket(**parsed)
 
 

@@ -3,13 +3,13 @@
 """
 from typing import Any
 
-from domain.ticket.models import TicketIntent
+from domain.ticket.models import TicketIntent, TicketProject
 from domain.ticket.transformers import draft_to_ticket, intent_to_draft
 
 
 def intent_to_jira_payload(
     ticket_intent: TicketIntent,
-    project_key: str,
+    project_key: TicketProject,
 ) -> dict[str, Any]:
     """
     Transforms a TicketIntent into a Jira API payload.

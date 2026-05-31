@@ -19,7 +19,7 @@ def setup_exception_handler(app: FastAPI) -> None:
     async def global_exception_handler(
         request: Request,
         exc: Exception,
-    ):
+    ) -> JSONResponse:
         """
         Handles uncaught application exceptions.
         """

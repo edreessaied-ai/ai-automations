@@ -3,7 +3,7 @@ Main entry point for the AI Automations.
 """
 from fastapi import FastAPI
 from fastapi.requests import Request
-from fastapi.responses import FileResponse, HTMLResponse
+from fastapi.responses import FileResponse, HTMLResponse, Response
 from fastapi.templating import Jinja2Templates
 
 from api.middleware.cors import setup_cors
@@ -34,7 +34,7 @@ app.include_router(slack_backend_router, prefix="/slack")
 
 
 @app.get("/", response_class=HTMLResponse)
-def home_page(request: Request):
+def home_page(request: Request) -> Response:
     """
     Render local Slack simulator UI.
     """
@@ -45,7 +45,7 @@ def home_page(request: Request):
 
 
 @app.get("/health")
-def health():
+def health() -> dict[str, str]:
     """
     Health check endpoint.
     """
@@ -53,7 +53,7 @@ def health():
 
 
 @app.get("/favicon.ico")
-def load_ui_icon_image():
+def load_ui_icon_image() -> FileResponse:
     """
     Serve simulator favicon.
     """

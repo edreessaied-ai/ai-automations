@@ -16,7 +16,7 @@ async def ticket_creation_handler_for_slack(
     """
     # Send the user input to the LLM and get a structured ticket intent back
     ticket_intent = send_ticket_request_to_llm(
-        user_prompt=slack_command_request.text,
+        user_prompt=slack_command_request.text or "",
     )
 
     # Log the structured ticket intent for debugging

@@ -27,7 +27,7 @@ def build_slack_command_request(
     """
     Convert raw Slack payload → internal request model.
     """
-    command = payload.get("command")
+    command = str(payload.get("command") or "")
     normalized_command = normalize_slack_command(command)
     return models.NormalizedSlackCommandRequest(
         intent=normalized_command,

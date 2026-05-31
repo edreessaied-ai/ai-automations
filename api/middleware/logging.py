@@ -3,8 +3,9 @@ Request/response logging middleware.
 """
 import time
 import uuid
+from collections.abc import Awaitable, Callable
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, Response
 
 from utilities.logger import get_logger, request_id_context_var
 
@@ -17,7 +18,10 @@ def setup_logging_middleware(app: FastAPI) -> None:
     Adds request logging middleware.
     """
     @app.middleware("http")
-    async def incoming_request_logger(request: Request, call_next):
+    async def incoming_request_logger(
+        request: Request,
+        call_next: Callable[[Request], Awaitable[Response]],
+    ) -> Response:
         """Logs incoming requests and their response status/duration."""
         request_id = uuid.uuid4()
         request_id_context_var.set(str(request_id))

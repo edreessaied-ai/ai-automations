@@ -48,7 +48,7 @@ class SlackResponsePayload(TypedDict, total=False):
     Represents the payload for a Slack response.
     """
     text: str
-    blocks: list[dict]
+    blocks: list[dict[str, Any]]
     response_type: Literal["ephemeral", "in_channel"]
 
 
@@ -59,7 +59,7 @@ class SlackMessage:
     Represents a message to be sent to Slack.
     """
     text: str | None = None
-    blocks: list[dict] | None = None
+    blocks: list[dict[str, Any]] | None = None
     response_type: Literal["ephemeral", "in_channel"] = "ephemeral"
 
     def to_slack_response(self) -> SlackResponsePayload:

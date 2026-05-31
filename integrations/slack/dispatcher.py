@@ -2,7 +2,7 @@
     Slack command dispatcher for processing incoming Slack commands.
 """
 import asyncio
-from collections.abc import Callable
+from collections.abc import Awaitable, Callable
 
 import integrations.slack.client as client
 import integrations.slack.models as models
@@ -20,21 +20,27 @@ from integrations.jira.models import JIRA_PROJECT
 log_handler = logger.get_logger(__name__)
 
 
+# Slack command handlers are async and return a Slack response payload.
+SlackCommandHandler = Callable[
+    [models.NormalizedSlackCommandRequest],
+    Awaitable[models.SlackResponsePayload],
+]
+
 # Registry of Slack commands and their corresponding handlers
 slack_command_registry: dict[
     models.SlackRequestType,
-    Callable[
-        [models.NormalizedSlackCommandRequest],
-        models.SlackResponsePayload]
-    ] = {}
+    SlackCommandHandler,
+] = {}
 
 
-def slack_command(command: models.SlackRequestType):
+def slack_command(
+    command: models.SlackRequestType,
+) -> Callable[[SlackCommandHandler], SlackCommandHandler]:
     """
     Decorator to register a function as a
     handler for a specific Slack command.
     """
-    def decorator(func: Callable):
+    def decorator(func: SlackCommandHandler) -> SlackCommandHandler:
         slack_command_registry[command] = func
         return func
     return decorator
@@ -53,7 +59,7 @@ async def handle_create_ticket(
     try:
         # Process the user input and create a structured ticket intent
         ticket_intent = await create_ticket_intent_from_user_input(
-            slack_request.text
+            slack_request.text or ""
         )
         jira_service = JiraService(
             base_url=load_jira_url(),
@@ -103,8 +109,9 @@ async def slack_intent_handler(
     log_handler.info(
         f"Starting BG Slack Intent Handler for {slack_command_request.intent}"
     )
-    request_handler = slack_command_registry.get(
-        slack_command_request.intent
+    intent = slack_command_request.intent
+    request_handler = (
+        slack_command_registry.get(intent) if intent is not None else None
     )
     if not request_handler:
         raise exceptions.SlackUnknownCommandError(
@@ -114,7 +121,7 @@ async def slack_intent_handler(
     slack_response = await request_handler(slack_command_request)
     if slack_command_request.response_url:
         await client.send_response_to_slack(
-            slack_command_request.response_url,
+            str(slack_command_request.response_url),
             slack_response
         )
     log_handler.info(

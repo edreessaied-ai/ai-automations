@@ -29,7 +29,7 @@ class OpenAILLMClient:
     OpenAILLMClient: A client for interacting with
     OpenAI's LLMs to extract structured data.
     """
-    def __init__(self):
+    def __init__(self) -> None:
         self.client = OPENAI_CLIENT
 
     def _call_llm(
@@ -74,7 +74,7 @@ class OpenAILLMClient:
         for item in getattr(response, "output", []):
             for content in getattr(item, "content", []):
                 if getattr(content, "type", None) == "output_text":
-                    return content.text
+                    return str(content.text)
         raise DataTransformationError(
             "No text content found in LLM response"
         )
