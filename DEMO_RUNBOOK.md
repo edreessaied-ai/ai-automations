@@ -40,7 +40,7 @@ go/no-go**.
 ## 2. Solo dry run (full rehearsal, ~1 hr before)
 
 1. [ ] Start the server: `uvicorn api.main:app --port 8000`
-2. [ ] Start the tunnel and **leave it running** — note the URL
+2. [ ] Start the tunnel via `cloudflared tunnel --url http://localhost:8000` and **leave it running** — note the URL
 3. [ ] Health check: `curl https://<tunnel>/health` → `{"status":"Healthy"}`
 4. [ ] Post a realistic seed thread (2–4 messages, e.g. a payments/login
        incident), then in a **reply** type `@TicketBot create a ticket`
