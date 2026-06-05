@@ -34,6 +34,14 @@ class SlackActionType(StrEnum):
     """
     CONFIRM_TICKET = "confirm_ticket"
     CANCEL_TICKET = "cancel_ticket"
+    IMPROVE_TICKET = "improve_ticket"
+    EDIT_TICKET = "edit_ticket"
+
+
+# Block Kit identifiers for the natural-language "Edit" modal.
+EDIT_MODAL_CALLBACK_ID = "edit_ticket_modal"
+EDIT_MODAL_BLOCK_ID = "edit_instructions_block"
+EDIT_MODAL_ACTION_ID = "edit_instructions_input"
 
 
 class NormalizedSlackCommandRequest(BaseModel):
@@ -58,6 +66,9 @@ class SlackResponsePayload(TypedDict, total=False):
     text: str
     blocks: list[dict[str, Any]]
     response_type: Literal["ephemeral", "in_channel"]
+    # When sent to an interaction `response_url`, replaces the original message
+    # in place instead of posting a new one (used by the Improve/Edit loop).
+    replace_original: bool
 
 
 # Slack Message
@@ -69,6 +80,7 @@ class SlackMessage:
     text: str | None = None
     blocks: list[dict[str, Any]] | None = None
     response_type: Literal["ephemeral", "in_channel"] = "ephemeral"
+    replace_original: bool = False
 
     def to_slack_response(self) -> SlackResponsePayload:
         """
@@ -81,6 +93,8 @@ class SlackMessage:
             payload["text"] = self.text
         if self.blocks is not None:
             payload["blocks"] = self.blocks
+        if self.replace_original:
+            payload["replace_original"] = True
         return payload
 
 
@@ -130,4 +144,19 @@ class SlackInteractionAction(BaseModel):
     action: SlackActionType
     draft_id: str
     response_url: HttpUrl | None = None
+    user_id: SlackUserIDStr | None = None
+    # Required to open a modal (`views.open`) in response to a button click.
+    # Slack issues a short-lived trigger id with every interaction payload.
+    trigger_id: str | None = None
+
+
+class SlackViewSubmission(BaseModel):
+    """
+    Normalized representation of an "Edit" modal submission (`view_submission`).
+
+    The draft id is round-tripped through the modal's `private_metadata`, and
+    the free-text instructions come from the modal's single input block.
+    """
+    draft_id: str
+    instructions: str
     user_id: SlackUserIDStr | None = None

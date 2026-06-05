@@ -137,13 +137,95 @@ def test_draft_store_round_trip_and_single_use() -> None:
 # ---------------------------------------------------------------------------
 
 
-def test_draft_preview_blocks_contain_confirm_and_cancel() -> None:
+def test_draft_preview_blocks_contain_all_actions() -> None:
     built = blocks.build_draft_preview_blocks(_sample_intent(), "draft-1")
     actions = [b for b in built if b["type"] == "actions"]
     assert len(actions) == 1
 
     elements = actions[0]["elements"]
     action_ids = {el["action_id"] for el in elements}
-    assert action_ids == {"confirm_ticket", "cancel_ticket"}
+    assert action_ids == {
+        "confirm_ticket",
+        "improve_ticket",
+        "edit_ticket",
+        "cancel_ticket",
+    }
     # Each button carries the draft id so the click can recover the draft.
     assert all(el["value"] == "draft-1" for el in elements)
+
+
+# ---------------------------------------------------------------------------
+# Refinement loop: draft store peek/update, edit modal, view submission
+# ---------------------------------------------------------------------------
+
+
+def test_draft_store_get_and_update_preserve_draft() -> None:
+    record = draft_store.save_draft(_sample_intent(), "C1", "1.0")
+    # Peeking does not consume the draft.
+    assert draft_store.get_draft(record.draft_id) is not None
+    assert draft_store.get_draft(record.draft_id) is not None
+
+    revised = _sample_intent()
+    revised.title = "Revised title"
+    updated = draft_store.update_draft(record.draft_id, revised)
+    assert updated is not None
+    assert updated.draft_id == record.draft_id
+    refreshed = draft_store.get_draft(record.draft_id)
+    assert refreshed is not None
+    assert refreshed.intent.title == "Revised title"
+
+
+def test_update_draft_missing_returns_none() -> None:
+    assert draft_store.update_draft("does-not-exist", _sample_intent()) is None
+
+
+def test_edit_modal_view_round_trips_draft_id() -> None:
+    view = blocks.build_edit_modal_view("draft-77")
+    assert view["callback_id"] == models.EDIT_MODAL_CALLBACK_ID
+    assert view["private_metadata"] == "draft-77"
+    assert view["blocks"][0]["block_id"] == models.EDIT_MODAL_BLOCK_ID
+
+
+def test_parse_view_submission_extracts_instructions_and_draft_id() -> None:
+    payload = {
+        "type": "view_submission",
+        "user": {"id": "U7"},
+        "view": {
+            "private_metadata": "draft-9",
+            "state": {
+                "values": {
+                    models.EDIT_MODAL_BLOCK_ID: {
+                        models.EDIT_MODAL_ACTION_ID: {
+                            "type": "plain_text_input",
+                            "value": "make it medium priority",
+                        }
+                    }
+                }
+            },
+        },
+    }
+    submission = parser.parse_view_submission(payload)
+    assert submission.draft_id == "draft-9"
+    assert submission.instructions == "make it medium priority"
+    assert submission.user_id == "U7"
+
+
+def test_parse_interaction_payload_captures_trigger_id() -> None:
+    action = parser.parse_interaction_payload(
+        {
+            "trigger_id": "trig-123",
+            "actions": [{"action_id": "edit_ticket", "value": "draft-1"}],
+        }
+    )
+    assert action.action is models.SlackActionType.EDIT_TICKET
+    assert action.trigger_id == "trig-123"
+
+
+def test_updated_draft_message_replace_original_flag() -> None:
+    msg = blocks.build_updated_draft_message(
+        _sample_intent(), "draft-1", replace_original=True
+    )
+    assert msg.to_slack_response()["replace_original"] is True
+    # Without the flag, the payload omits replace_original entirely.
+    msg2 = blocks.build_updated_draft_message(_sample_intent(), "draft-1")
+    assert "replace_original" not in msg2.to_slack_response()

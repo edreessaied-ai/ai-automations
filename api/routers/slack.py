@@ -13,6 +13,7 @@ import integrations.slack.dispatcher as dispatcher
 import integrations.slack.local_store as local_store
 import integrations.slack.models as models
 import integrations.slack.parser as parser
+import integrations.slack.security as security
 from utilities.logger import get_logger
 
 # Set up logger for this module
@@ -33,6 +34,7 @@ async def slack_command_router(
     """
     Endpoint to receive Slack slash commands.
     """
+    security.verify_slack_signature(request, await request.body())
     slack_payload = await request.form()
     slack_command_request = (
         parser.build_slack_command_request(
@@ -58,6 +60,7 @@ async def slack_events_router(
     Real Slack requires a fast acknowledgement, so the actual work (thread
     retrieval, LLM generation, posting the draft) runs in the background.
     """
+    security.verify_slack_signature(request, await request.body())
     payload: dict[str, Any] = await request.json()
 
     # Slack URL verification handshake.
@@ -88,12 +91,23 @@ async def slack_interactions_router(
     Slack posts an `application/x-www-form-urlencoded` body with a JSON
     `payload` field; the local simulator posts JSON directly.
     """
+    security.verify_slack_signature(request, await request.body())
     content_type = request.headers.get("content-type", "")
     if "application/json" in content_type:
         raw_payload: dict[str, Any] = await request.json()
     else:
         form = await request.form()
         raw_payload = json.loads(str(form.get("payload") or "{}"))
+
+    # An Edit-modal submission arrives as a `view_submission`; button clicks
+    # arrive as `block_actions` (or the simulator's flat payload).
+    if raw_payload.get("type") == "view_submission":
+        submission = parser.parse_view_submission(raw_payload)
+        background_tasks_manager.add_task(
+            dispatcher.handle_view_submission, submission
+        )
+        # An empty 200 closes the modal.
+        return JSONResponse(content={})
 
     interaction = parser.parse_interaction_payload(raw_payload)
     background_tasks_manager.add_task(

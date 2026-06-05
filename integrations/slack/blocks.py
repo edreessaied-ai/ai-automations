@@ -74,6 +74,18 @@ def build_draft_preview_blocks(
                 },
                 {
                     "type": "button",
+                    "text": {"type": "plain_text", "text": "🔄 Improve"},
+                    "action_id": models.SlackActionType.IMPROVE_TICKET.value,
+                    "value": draft_id,
+                },
+                {
+                    "type": "button",
+                    "text": {"type": "plain_text", "text": "✏️ Edit"},
+                    "action_id": models.SlackActionType.EDIT_TICKET.value,
+                    "value": draft_id,
+                },
+                {
+                    "type": "button",
                     "style": "danger",
                     "text": {"type": "plain_text", "text": "Cancel"},
                     "action_id": models.SlackActionType.CANCEL_TICKET.value,
@@ -83,6 +95,66 @@ def build_draft_preview_blocks(
         }
     )
     return blocks
+
+
+def build_edit_modal_view(draft_id: str) -> dict[str, Any]:
+    """
+    Build the "Edit" modal asking the user what they'd like to change.
+
+    The draft id is carried in `private_metadata` so the `view_submission`
+    handler can recover and update the exact draft being edited.
+    """
+    return {
+        "type": "modal",
+        "callback_id": models.EDIT_MODAL_CALLBACK_ID,
+        "private_metadata": draft_id,
+        "title": {"type": "plain_text", "text": "Edit Ticket"},
+        "submit": {"type": "plain_text", "text": "Apply"},
+        "close": {"type": "plain_text", "text": "Cancel"},
+        "blocks": [
+            {
+                "type": "input",
+                "block_id": models.EDIT_MODAL_BLOCK_ID,
+                "label": {
+                    "type": "plain_text",
+                    "text": "What would you like to change?",
+                },
+                "element": {
+                    "type": "plain_text_input",
+                    "action_id": models.EDIT_MODAL_ACTION_ID,
+                    "multiline": True,
+                    "placeholder": {
+                        "type": "plain_text",
+                        "text": (
+                            "e.g. make it medium priority and mention "
+                            "the mobile impact"
+                        ),
+                    },
+                },
+            }
+        ],
+    }
+
+
+def build_updated_draft_message(
+    intent: TicketIntent,
+    draft_id: str,
+    *,
+    replace_original: bool = False,
+    header: str = "Here's the updated draft.",
+) -> models.SlackMessage:
+    """
+    Build a refreshed draft-preview message after an Improve/Edit iteration.
+
+    When `replace_original` is set the message updates the existing preview in
+    place (used for the Improve button, which has a `response_url`); otherwise
+    it is posted as a new message in the thread (used after an Edit modal).
+    """
+    return models.SlackMessage(
+        text=header,
+        blocks=build_draft_preview_blocks(intent, draft_id),
+        replace_original=replace_original,
+    )
 
 
 def build_creation_success_message(

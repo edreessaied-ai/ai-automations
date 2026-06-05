@@ -14,14 +14,16 @@ import utilities.logger as logger
 from api.services.jira_service import (
     JiraService,
     load_jira_api_token,
+    load_jira_project_key,
     load_jira_url,
     load_jira_user_email,
 )
 from domain.ticket.pipeline import (
     create_ticket_intent_from_thread,
     create_ticket_intent_from_user_input,
+    edit_ticket_intent,
+    improve_ticket_intent,
 )
-from integrations.jira.models import JIRA_PROJECT
 
 log_handler = logger.get_logger(__name__)
 
@@ -67,12 +69,7 @@ async def handle_create_ticket(
         ticket_intent = await create_ticket_intent_from_user_input(
             slack_request.text or ""
         )
-        jira_service = JiraService(
-            base_url=load_jira_url(),
-            email=load_jira_user_email(),
-            api_token=load_jira_api_token(),
-            project_key=JIRA_PROJECT
-        )
+        jira_service = _build_jira_service()
         # create_ticket uses blocking I/O (requests); run it in a thread
         # so it doesn't block the event loop in this async background task.
         jira_instance = await asyncio.to_thread(
@@ -112,7 +109,7 @@ def _build_jira_service() -> JiraService:
         base_url=load_jira_url(),
         email=load_jira_user_email(),
         api_token=load_jira_api_token(),
-        project_key=JIRA_PROJECT,
+        project_key=load_jira_project_key(),
     )
 
 
@@ -205,13 +202,26 @@ async def _deliver_interaction_response(
 
 async def handle_interaction(action: models.SlackInteractionAction) -> None:
     """
-    Process a draft confirmation button click (Create Ticket / Cancel).
+    Process a draft button click: Create Ticket, Cancel, Improve, or Edit.
+
+    Create and Cancel are terminal and consume the draft. Improve and Edit are
+    iterative refinements that keep the draft alive so the user can keep going.
     """
     log_handler.info(
         f"Handling interaction action={action.action} "
         f"draft_id={action.draft_id}"
     )
-    draft = draft_store.pop_draft(action.draft_id)
+
+    # Improve/Edit must not consume the draft; only peek at it.
+    is_refinement = action.action in (
+        models.SlackActionType.IMPROVE_TICKET,
+        models.SlackActionType.EDIT_TICKET,
+    )
+    draft = (
+        draft_store.get_draft(action.draft_id)
+        if is_refinement
+        else draft_store.pop_draft(action.draft_id)
+    )
     if draft is None:
         log_handler.warning(f"Draft {action.draft_id} not found or expired.")
         await _deliver_interaction_response(
@@ -228,6 +238,20 @@ async def handle_interaction(action: models.SlackInteractionAction) -> None:
             draft.channel_id,
             draft.thread_ts,
             blocks.build_cancelled_message(),
+        )
+        return
+
+    if action.action is models.SlackActionType.IMPROVE_TICKET:
+        await _handle_improve(action, draft)
+        return
+
+    if action.action is models.SlackActionType.EDIT_TICKET:
+        # Open the Edit modal; the actual edit happens on view_submission.
+        if not action.trigger_id:
+            log_handler.warning("Edit click missing trigger_id; cannot open.")
+            return
+        await client.open_modal(
+            action.trigger_id, blocks.build_edit_modal_view(draft.draft_id)
         )
         return
 
@@ -254,6 +278,82 @@ async def handle_interaction(action: models.SlackInteractionAction) -> None:
         draft.channel_id,
         draft.thread_ts,
         blocks.build_creation_success_message(jira_instance),
+    )
+
+
+async def _handle_improve(
+    action: models.SlackInteractionAction,
+    draft: draft_store.TicketDraftRecord,
+) -> None:
+    """Regenerate a clearer draft and update the preview in place."""
+    try:
+        improved = await improve_ticket_intent(draft.intent)
+    except Exception:
+        log_handler.exception("Failed to improve ticket draft")
+        await _deliver_interaction_response(
+            action,
+            draft.channel_id,
+            draft.thread_ts,
+            blocks.build_error_message(blocks.LLM_FAILURE_MESSAGE),
+        )
+        return
+
+    draft_store.update_draft(draft.draft_id, improved)
+    await _deliver_interaction_response(
+        action,
+        draft.channel_id,
+        draft.thread_ts,
+        blocks.build_updated_draft_message(
+            improved,
+            draft.draft_id,
+            replace_original=True,
+            header="Here's an improved version of the ticket.",
+        ),
+    )
+
+
+async def handle_view_submission(
+    submission: models.SlackViewSubmission,
+) -> None:
+    """
+    Apply an Edit-modal instruction to a draft and post the updated preview.
+    """
+    log_handler.info(
+        f"Handling edit submission draft_id={submission.draft_id}"
+    )
+    draft = draft_store.get_draft(submission.draft_id)
+    if draft is None:
+        log_handler.warning(
+            f"Draft {submission.draft_id} not found for edit submission."
+        )
+        return
+
+    if not submission.instructions:
+        log_handler.info("Empty edit instruction; leaving draft unchanged.")
+        return
+
+    try:
+        edited = await edit_ticket_intent(draft.intent, submission.instructions)
+    except Exception:
+        log_handler.exception("Failed to apply edit to ticket draft")
+        await client.post_message(
+            draft.channel_id,
+            draft.thread_ts,
+            blocks.build_error_message(blocks.LLM_FAILURE_MESSAGE),
+        )
+        return
+
+    draft_store.update_draft(draft.draft_id, edited)
+    # A modal submission has no response_url for the original message, so post
+    # the refreshed draft as a new message in the thread.
+    await client.post_message(
+        draft.channel_id,
+        draft.thread_ts,
+        blocks.build_updated_draft_message(
+            edited,
+            draft.draft_id,
+            header="Here's the updated draft with your changes.",
+        ),
     )
 
 

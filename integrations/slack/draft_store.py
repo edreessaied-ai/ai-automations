@@ -44,6 +44,32 @@ def save_draft(
     return record
 
 
+def get_draft(draft_id: str) -> TicketDraftRecord | None:
+    """
+    Return a draft by id without consuming it.
+
+    Used by the Improve/Edit refinement loop, where the draft must survive
+    so the user can keep iterating before they Create or Cancel.
+    """
+    return _DRAFTS.get(draft_id)
+
+
+def update_draft(
+    draft_id: str,
+    intent: TicketIntent,
+) -> TicketDraftRecord | None:
+    """
+    Replace the intent of an existing draft in place, keeping the same id.
+
+    Returns the updated record, or None if the draft no longer exists.
+    """
+    record = _DRAFTS.get(draft_id)
+    if record is None:
+        return None
+    record.intent = intent
+    return record
+
+
 def pop_draft(draft_id: str) -> TicketDraftRecord | None:
     """
     Remove and return a draft by id.

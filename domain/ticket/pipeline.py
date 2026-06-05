@@ -3,6 +3,9 @@
     converting user input into structured
     tickets using an LLM.
 """
+import asyncio
+import json
+
 from domain.ticket.models import TicketIntent, TicketUserPromptText
 from integrations.llm.openai_client import OpenAILLMClient
 from utilities.logger import get_logger
@@ -113,6 +116,56 @@ If the user included instructions in their request (for example
 ticket"), honor them as long as they do not require inventing facts.
 """.strip()
 
+# Refinement prompts for the in-Slack Improve / Edit loop. Both operate on an
+# existing draft (provided as JSON) and must preserve the output schema.
+IMPROVE_SYSTEM_PROMPT = """
+You improve an existing draft Jira ticket. You are given the current ticket
+as a JSON object. Rewrite it to be clearer, better structured, and more
+complete, while staying faithful to the original meaning.
+
+Return exactly ONE valid JSON object. Do not include any text outside
+the JSON.
+
+Output schema:
+- title: concise, specific ticket title (no trailing punctuation)
+- description: clear, well-structured explanation of the issue
+- priority: one of ["Low", "Medium", "High"]
+- labels: list of relevant tags (can be empty)
+- summary: one or two sentence plain-language summary
+- assignee: keep the existing value (null if absent)
+
+You SHOULD:
+- Improve clarity, grammar, structure, and completeness
+- Preserve all concrete technical details already present
+- Keep the same priority unless the existing text clearly justifies a change
+
+You MUST NOT:
+- Invent facts, services, errors, or impact not implied by the current draft
+- Change the fundamental issue the ticket describes
+""".strip()
+
+EDIT_SYSTEM_PROMPT = """
+You edit an existing draft Jira ticket according to a user's instruction.
+You are given the current ticket as a JSON object and a natural-language
+instruction describing the change the user wants.
+
+Return exactly ONE valid JSON object. Do not include any text outside
+the JSON.
+
+Output schema:
+- title: concise, specific ticket title (no trailing punctuation)
+- description: clear, well-structured explanation of the issue
+- priority: one of ["Low", "Medium", "High"]
+- labels: list of relevant tags (can be empty)
+- summary: one or two sentence plain-language summary
+- assignee: keep the existing value unless the instruction changes it
+
+Rules:
+- Apply the user's instruction faithfully and precisely
+- Leave everything the instruction does not mention unchanged
+- Do not invent facts beyond what the instruction or current draft imply
+""".strip()
+
 llm_client = OpenAILLMClient()
 
 
@@ -188,3 +241,40 @@ async def create_ticket_intent_from_thread(
         f"Received thread ticket intent from LLM: {ticket_intent.to_string()}"
     )
     return ticket_intent
+
+
+def _refine(system_prompt: str, prompt: str) -> TicketIntent:
+    """Run a refinement prompt through the LLM and return a TicketIntent."""
+    return llm_client.extract_structured(
+        prompt=prompt,
+        system_prompt=system_prompt,
+        data_model=TicketIntent,
+        max_retries=5,
+    )
+
+
+async def improve_ticket_intent(intent: TicketIntent) -> TicketIntent:
+    """
+    Enhance an existing draft's clarity, structure, and completeness without
+    inventing new facts (the "Improve" button).
+    """
+    log_handler.info("Improving existing ticket draft.")
+    prompt = f"Current ticket:\n{json.dumps(intent.to_dict())}"
+    # extract_structured is blocking I/O; keep it off the event loop.
+    return await asyncio.to_thread(_refine, IMPROVE_SYSTEM_PROMPT, prompt)
+
+
+async def edit_ticket_intent(
+    intent: TicketIntent,
+    instructions: str,
+) -> TicketIntent:
+    """
+    Apply a natural-language instruction to an existing draft (the "Edit"
+    modal), e.g. "make it medium priority and mention mobile impact".
+    """
+    log_handler.info(f"Editing ticket draft with instructions: {instructions}")
+    prompt = (
+        f"Current ticket:\n{json.dumps(intent.to_dict())}\n\n"
+        f"User instruction: {instructions}"
+    )
+    return await asyncio.to_thread(_refine, EDIT_SYSTEM_PROMPT, prompt)

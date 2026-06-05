@@ -58,6 +58,54 @@ def forward_ephemeral_error_message(error_message: str) -> JSONResponse:
     )
 
 
+def _slack_error_detail(data: dict[str, Any]) -> str:
+    """
+    Build a descriptive error string from a Slack API error response.
+
+    Slack returns `needed`/`provided` alongside `missing_scope`, which makes
+    scope misconfigurations self-explanatory instead of a bare error code.
+    """
+    error = str(data.get("error") or "unknown_error")
+    needed = data.get("needed")
+    provided = data.get("provided")
+    if needed or provided:
+        return f"{error} (needed={needed}, provided={provided})"
+    return error
+
+
+async def open_modal(trigger_id: str, view: dict[str, Any]) -> None:
+    """
+    Open a modal via `views.open`.
+
+    Falls back to a no-op when no bot token is configured: the local simulator
+    cannot render Slack modals, so the Edit flow is real-Slack only.
+    """
+    token = _bot_token()
+    if not token:
+        log_handler.info("No bot token; skipping views.open (simulator mode).")
+        return
+
+    try:
+        async with httpx.AsyncClient() as async_client:
+            response = await async_client.post(
+                f"{SLACK_API_BASE_URL}/views.open",
+                headers={"Authorization": f"Bearer {token}"},
+                json={"trigger_id": trigger_id, "view": view},
+                timeout=SLACK_API_TIMEOUT,
+            )
+        data = response.json()
+    except Exception as e:
+        log_handler.exception("Error opening Slack modal")
+        raise exceptions.SlackResponseSendError(
+            f"Failed to open Slack modal: {e}"
+        ) from e
+
+    if not data.get("ok"):
+        raise exceptions.SlackResponseSendError(
+            f"Slack views.open failed: {_slack_error_detail(data)}"
+        )
+
+
 async def send_response_to_slack(
     response_url: URLStr,
     response_payload: models.SlackResponsePayload
@@ -134,7 +182,7 @@ async def fetch_thread_replies(
 
     if not data.get("ok"):
         raise exceptions.SlackThreadContextError(
-            f"Slack conversations.replies failed: {data.get('error')}"
+            f"Slack conversations.replies failed: {_slack_error_detail(data)}"
         )
 
     messages = _parse_thread_messages(data.get("messages", []))
@@ -165,10 +213,13 @@ async def post_message(
         local_store.publish_message(dict(payload))
         return
 
+    # `replace_original` only applies to interaction response_urls, not to
+    # chat.postMessage; drop it so we don't send an unsupported argument.
+    post_payload = {k: v for k, v in payload.items() if k != "replace_original"}
     body: dict[str, Any] = {
         "channel": channel_id,
         "thread_ts": thread_ts,
-        **payload,
+        **post_payload,
     }
     try:
         async with httpx.AsyncClient() as async_client:
@@ -187,5 +238,5 @@ async def post_message(
 
     if not data.get("ok"):
         raise exceptions.SlackResponseSendError(
-            f"Slack chat.postMessage failed: {data.get('error')}"
+            f"Slack chat.postMessage failed: {_slack_error_detail(data)}"
         )

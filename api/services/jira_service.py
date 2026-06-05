@@ -17,7 +17,11 @@ import requests
 
 from domain.ticket.models import TicketIntent
 from integrations.jira.mapper import intent_to_jira_payload
-from integrations.jira.models import JIRA_TRANSACTION_TIMEOUT, JiraInstance
+from integrations.jira.models import (
+    JIRA_PROJECT,
+    JIRA_TRANSACTION_TIMEOUT,
+    JiraInstance,
+)
 from utilities.exceptions import JiraConfigurationError
 from utilities.logger import get_logger
 from utilities.retry_util import RetryException, retry
@@ -60,6 +64,16 @@ def load_jira_url() -> str:
             "JIRA_URL not found in environment variables."
         )
     return jira_url
+
+
+def load_jira_project_key() -> str:
+    """
+    Load the target Jira project key.
+
+    Configurable via `JIRA_PROJECT_KEY` so a clean demo project can be used
+    without code changes; falls back to the built-in default when unset.
+    """
+    return os.getenv("JIRA_PROJECT_KEY") or JIRA_PROJECT
 
 
 class JiraService:

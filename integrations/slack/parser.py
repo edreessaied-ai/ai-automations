@@ -137,4 +137,32 @@ def parse_interaction_payload(
         draft_id=draft_id,
         response_url=payload.get("response_url"),
         user_id=user_id,
+        trigger_id=payload.get("trigger_id"),
+    )
+
+
+def parse_view_submission(
+    payload: dict[str, Any],
+) -> models.SlackViewSubmission:
+    """
+    Normalize an Edit-modal `view_submission` payload.
+
+    The draft id is read back from the view's `private_metadata`, and the
+    free-text instruction from the modal's single input block.
+    """
+    view = payload.get("view") or {}
+    draft_id = str(view.get("private_metadata") or "")
+
+    state_values = (view.get("state") or {}).get("values") or {}
+    block = state_values.get(models.EDIT_MODAL_BLOCK_ID) or {}
+    element = block.get(models.EDIT_MODAL_ACTION_ID) or {}
+    instructions = str(element.get("value") or "").strip()
+
+    user = payload.get("user")
+    user_id = user.get("id") if isinstance(user, dict) else None
+
+    return models.SlackViewSubmission(
+        draft_id=draft_id,
+        instructions=instructions,
+        user_id=user_id,
     )
