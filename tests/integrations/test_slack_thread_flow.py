@@ -153,6 +153,13 @@ def test_draft_preview_blocks_contain_all_actions() -> None:
     # Each button carries the draft id so the click can recover the draft.
     assert all(el["value"] == "draft-1" for el in elements)
 
+    # Create, Improve, and Edit share the green "primary" style; Cancel is red.
+    style_by_action = {el["action_id"]: el.get("style") for el in elements}
+    assert style_by_action["confirm_ticket"] == "primary"
+    assert style_by_action["improve_ticket"] == "primary"
+    assert style_by_action["edit_ticket"] == "primary"
+    assert style_by_action["cancel_ticket"] == "danger"
+
 
 # ---------------------------------------------------------------------------
 # Refinement loop: draft store peek/update, edit modal, view submission

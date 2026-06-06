@@ -74,12 +74,14 @@ def build_draft_preview_blocks(
                 },
                 {
                     "type": "button",
+                    "style": "primary",
                     "text": {"type": "plain_text", "text": "🔄 Improve"},
                     "action_id": models.SlackActionType.IMPROVE_TICKET.value,
                     "value": draft_id,
                 },
                 {
                     "type": "button",
+                    "style": "primary",
                     "text": {"type": "plain_text", "text": "✏️ Edit"},
                     "action_id": models.SlackActionType.EDIT_TICKET.value,
                     "value": draft_id,
